@@ -89,8 +89,7 @@ function loadStats() {
         nicknameInput.value = gameState.nickname;
     }
 
-    // Загружаем мини-лидерборд (локальный + запрашиваем глобальный)
-    loadMiniLeaderboard();
+    // Запрашиваем глобальный лидерборд с сервера (обновит и мини и полный)
     requestGlobalLeaderboard();
 }
 
@@ -1109,7 +1108,6 @@ function setupSocketListeners() {
         }
         
         // Обновляем никнеймы
-        console.log('start-placing received:', data);
         if (data.yourNickname && data.enemyNickname) {
             displayUsernames(data.yourNickname, data.enemyNickname);
         } else {
@@ -1503,9 +1501,8 @@ function updateLeaderboard(won = null) {
     }
 
     localStorage.setItem(key, JSON.stringify(stats));
-
-    // Обновляем мини-лидерборд после изменения рейтинга
-    loadMiniLeaderboard();
+    
+    // Note: Mini leaderboard updates automatically via server data
 }
 
 // Запрос глобального лидерборда с сервера
@@ -1530,14 +1527,22 @@ function requestGlobalLeaderboard() {
 
 // Обновление глобального лидерборда на клиенте
 function updateGlobalLeaderboard(serverData) {
-    if (!serverData || serverData.length === 0) return;
+    if (!serverData || serverData.length === 0) {
+        // Show empty state
+        const miniLeaderboardList = document.getElementById('mini-leaderboard-list');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        
+        if (miniLeaderboardList) {
+            const noPlayersText = typeof i18n !== 'undefined' ? 'No players yet' : 'Пока нет игроков';
+            miniLeaderboardList.innerHTML = `<div style="padding: 10px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">${noPlayersText}</div>`;
+        }
+        return;
+    }
     
+    // Update mini leaderboard in menu
     const miniLeaderboardList = document.getElementById('mini-leaderboard-list');
-    const leaderboardList = document.getElementById('leaderboard-list');
-    
     if (miniLeaderboardList) {
         const html = serverData.slice(0, 5).map((player, index) => {
-            const noPlayerText = typeof i18n !== 'undefined' ? 'No players yet' : 'Пока нет игроков';
             const noNameText = typeof i18n !== 'undefined' ? 'Anonymous' : 'Безымянный';
             return `
                 <div class="mini-leaderboard-row ${index < 3 ? 'top3' : ''}">
@@ -1548,6 +1553,12 @@ function updateGlobalLeaderboard(serverData) {
             `;
         }).join('');
         miniLeaderboardList.innerHTML = html;
+    }
+    
+    // Also update full leaderboard if we're on that screen
+    const leaderboardList = document.getElementById('leaderboard-list');
+    if (leaderboardList && leaderboardList.innerHTML !== '') {
+        displayFullLeaderboard(serverData);
     }
 }
 
@@ -1639,11 +1650,8 @@ function setupChatListeners() {
 
 // Display usernames in battle
 function displayUsernames(yourNickname, enemyNickname) {
-    console.log('Displaying usernames:', yourNickname, enemyNickname);
     const yourDisplay = document.getElementById('your-nickname-display');
     const enemyDisplay = document.getElementById('enemy-nickname-display');
-    
-    console.log('yourDisplay:', yourDisplay, 'enemyDisplay:', enemyDisplay);
     
     if (yourDisplay) {
         yourDisplay.textContent = yourNickname || 'Your Troops';
