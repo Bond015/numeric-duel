@@ -20,6 +20,7 @@ const TYPE_DISTRIBUTION = Array(20).fill(0).map((_, i) => {
 
 // Socket.io подключение
 let socket = null;
+let socketListenersSetup = false;
 
 // Таймер готовности для мультиплеера
 let readyTimer = null;
@@ -60,6 +61,24 @@ function initGame() {
     if (typeof i18n !== 'undefined') {
         i18n.updateAllTexts();
     }
+    
+    // Initialize global chat connection
+    initGlobalChat();
+}
+
+// Initialize global chat connection
+function initGlobalChat() {
+    // Use production server if available, otherwise localhost
+    const serverUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://numeric-duel-production.up.railway.app';
+    
+    // Create socket for global chat (or reuse main socket if exists)
+    if (!socket) {
+        socket = io(serverUrl);
+        setupSocketListeners();
+    }
+    // Chat message listener is already set up in setupSocketListeners()
 }
 
 // Загрузка статистики
@@ -1005,6 +1024,10 @@ function initMultiplayer() {
 }
 
 function setupSocketListeners() {
+    // Prevent duplicate listeners
+    if (socketListenersSetup) return;
+    socketListenersSetup = true;
+    
     socket.on('connect', () => {
         console.log('Connected to server');
         const lobbyStatus = document.getElementById('lobby-status');
@@ -1186,6 +1209,24 @@ function setupSocketListeners() {
     // Получение глобального лидерборда
     socket.on('global-leaderboard', (data) => {
         updateGlobalLeaderboard(data);
+    });
+    
+    // Setup chat message listener
+    socket.on('chat-message', (data) => {
+        const chatMessages = document.getElementById('chat-messages');
+        if (!chatMessages) return;
+        
+        const messageEl = document.createElement('div');
+        const isOwn = data.playerId === gameState.playerId;
+        messageEl.className = `chat-message ${isOwn ? 'own' : 'player'}`;
+        messageEl.innerHTML = `<span class="sender">${data.nickname}:</span>${data.message}`;
+        chatMessages.appendChild(messageEl);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Keep only last 50 messages
+        while (chatMessages.children.length > 50) {
+            chatMessages.removeChild(chatMessages.firstChild);
+        }
     });
 }
 
@@ -1560,12 +1601,19 @@ function setupChatListeners() {
         const message = chatInput.value.trim();
         if (!message || !gameState.nickname) return;
         
-        // For now, just local chat (server chat can be added later)
-        const messageEl = document.createElement('div');
-        messageEl.className = 'chat-message own';
-        messageEl.innerHTML = `<span class="sender">${gameState.nickname}:</span>${message}`;
-        chatMessages.appendChild(messageEl);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        // Send message to server
+        if (socket && socket.connected) {
+            socket.emit('chat-message', {
+                nickname: gameState.nickname,
+                message: message,
+                playerId: gameState.playerId
+            });
+        } else {
+            // Show error if not connected
+            const errorMsg = typeof i18n !== 'undefined' ? 'Not connected to server' : 'Нет подключения к серверу';
+            alert(errorMsg);
+        }
+        
         chatInput.value = '';
     };
     

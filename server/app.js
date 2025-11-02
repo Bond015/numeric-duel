@@ -356,6 +356,12 @@ io.on('connection', (socket) => {
         const topPlayers = getTopPlayers(10);
         socket.emit('global-leaderboard', topPlayers);
     });
+    
+    // Глобальный чат
+    socket.on('chat-message', (data) => {
+        // Broadcast to all connected clients
+        io.emit('chat-message', data);
+    });
 });
 
 function startGame(roomId, room) {
