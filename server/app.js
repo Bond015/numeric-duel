@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +15,9 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Leaderboard storage file
+const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
 
 // Middleware
 app.use(cors());
@@ -46,6 +50,35 @@ let globalUnitIdCounter = 0;
 
 // Глобальный лидерборд (в памяти, для демо)
 const globalLeaderboard = new Map();
+
+// Load leaderboard from file
+function loadLeaderboard() {
+    try {
+        if (fs.existsSync(LEADERBOARD_FILE)) {
+            const data = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
+            const players = JSON.parse(data);
+            players.forEach(player => {
+                globalLeaderboard.set(player.playerId, player);
+            });
+            console.log(`✅ Loaded ${players.length} players from leaderboard`);
+        } else {
+            console.log('📝 No existing leaderboard, starting fresh');
+        }
+    } catch (error) {
+        console.error('❌ Error loading leaderboard:', error);
+    }
+}
+
+// Save leaderboard to file
+function saveLeaderboard() {
+    try {
+        const players = Array.from(globalLeaderboard.values());
+        fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(players, null, 2));
+        console.log(`💾 Saved ${players.length} players to leaderboard`);
+    } catch (error) {
+        console.error('❌ Error saving leaderboard:', error);
+    }
+}
 
 // Функции игры
 function getUnitType(num) {
@@ -596,6 +629,9 @@ function updateGlobalLeaderboard(playerId, nickname, won) {
     player.nickname = nickname;
     
     globalLeaderboard.set(playerId, player);
+    
+    // Save to file after each update
+    saveLeaderboard();
 }
 
 // Получить топ игроков
@@ -614,6 +650,8 @@ function getTopPlayers(limit = 10) {
 }
 
 // Запуск сервера
+loadLeaderboard(); // Load leaderboard on startup
+
 server.listen(PORT, () => {
     console.log(`🎮 Числовая Дуэль - Сервер запущен на порту ${PORT}`);
     console.log(`🌐 Откройте http://localhost:${PORT} в браузере`);
