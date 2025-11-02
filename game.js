@@ -1012,6 +1012,9 @@ function showScreen(screenName) {
 
 // Мультиплеер функции
 function initMultiplayer() {
+    // Save nickname before starting multiplayer
+    saveStats();
+    
     if (!socket) {
         // Use production server if available, otherwise localhost
         const serverUrl = window.location.hostname === 'localhost' 
