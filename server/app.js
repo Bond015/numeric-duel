@@ -375,9 +375,12 @@ function startGame(roomId, room) {
     // Сразу начинаем расстановку флангов без выбора чисел
     // Отправляем каждому игроку его армию
     room.players.forEach((player, index) => {
+        const enemyPlayer = room.players[1 - index]; // Противоположный игрок
         io.to(player.id).emit('start-placing', {
             turnNumber: room.turnNumber,
-            yourArmy: player.numbers
+            yourArmy: player.numbers,
+            yourNickname: player.name,
+            enemyNickname: enemyPlayer.name
         });
     });
 }
@@ -472,9 +475,12 @@ function performBattle(roomId, room) {
     // Продолжаем игру (ждем пока анимация на клиенте закончится)
     setTimeout(() => {
         room.players.forEach((player, index) => {
+            const enemyPlayer = room.players[1 - index]; // Противоположный игрок
             io.to(player.id).emit('start-placing', {
                 turnNumber: room.turnNumber,
-                yourArmy: player.numbers
+                yourArmy: player.numbers,
+                yourNickname: player.name,
+                enemyNickname: enemyPlayer.name
             });
         });
     }, 10000);

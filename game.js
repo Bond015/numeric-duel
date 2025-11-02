@@ -146,6 +146,9 @@ function setupEventListeners() {
             }, 500);
         });
     }
+    
+    // Chat functionality
+    setupChatListeners();
 }
 
 // Показать правила
@@ -1071,6 +1074,11 @@ function setupSocketListeners() {
         if (data.yourArmy) {
             gameState.yourNumbers = data.yourArmy;
         }
+        
+        // Обновляем никнеймы
+        if (data.yourNickname && data.enemyNickname) {
+            displayUsernames(data.yourNickname, data.enemyNickname);
+        }
 
         // Сбрасываем флаг placed для всех отрядов и фланги
         gameState.yourNumbers.forEach(u => u.placed = false);
@@ -1523,6 +1531,62 @@ function updateNicknameStatus(message, type) {
     
     statusEl.textContent = message;
     statusEl.className = 'nickname-status ' + type;
+}
+
+// Setup chat listeners
+function setupChatListeners() {
+    const chatToggle = document.getElementById('chat-toggle');
+    const chatSend = document.getElementById('chat-send');
+    const chatInput = document.getElementById('chat-input');
+    const chatContainer = document.querySelector('.chat-container');
+    const chatMessages = document.getElementById('chat-messages');
+    
+    if (chatToggle && chatContainer) {
+        chatToggle.addEventListener('click', () => {
+            chatContainer.classList.toggle('collapsed');
+            chatToggle.textContent = chatContainer.classList.contains('collapsed') ? '+' : '−';
+        });
+    }
+    
+    const sendMessage = () => {
+        if (!chatInput || !chatMessages) return;
+        const message = chatInput.value.trim();
+        if (!message || !gameState.nickname) return;
+        
+        // For now, just local chat (server chat can be added later)
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message own';
+        messageEl.innerHTML = `<span class="sender">${gameState.nickname}:</span>${message}`;
+        chatMessages.appendChild(messageEl);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        chatInput.value = '';
+    };
+    
+    if (chatSend) {
+        chatSend.addEventListener('click', sendMessage);
+    }
+    
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+}
+
+// Display usernames in battle
+function displayUsernames(yourNickname, enemyNickname) {
+    const yourDisplay = document.getElementById('your-nickname-display');
+    const enemyDisplay = document.getElementById('enemy-nickname-display');
+    
+    if (yourDisplay) {
+        yourDisplay.textContent = yourNickname || 'Your Troops';
+    }
+    
+    if (enemyDisplay) {
+        enemyDisplay.textContent = enemyNickname || 'Enemy';
+    }
 }
 
 // Запуск игры при загрузке страницы

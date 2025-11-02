@@ -41,6 +41,21 @@
                         <!-- Top players will be added via JS -->
                     </div>
                 </div>
+
+                <!-- Chat -->
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <h3>💬 Global Chat</h3>
+                        <button class="btn-chat-toggle" id="chat-toggle">−</button>
+                    </div>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-message system">Welcome to Numeric Duel! Chat with other players.</div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="200">
+                        <button class="btn btn-primary btn-send" id="chat-send">Send</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -73,7 +88,7 @@
                 <div class="flank-battlefield">
                     <!-- Your flanks -->
                     <div class="flank-player" id="your-flanks">
-                        <h3>Your Troops</h3>
+                        <h3><span id="your-nickname-display" class="player-nickname">Your Troops</span></h3>
 
                         <div class="flank-slots">
                             <div class="flank-slot flank-left">
@@ -97,7 +112,7 @@
 
                     <!-- Enemy flanks -->
                     <div class="flank-player" id="enemy-flanks">
-                        <h3>Enemy</h3>
+                        <h3><span id="enemy-nickname-display" class="player-nickname">Enemy</span></h3>
 
                         <div class="flank-slots">
                             <div class="flank-slot flank-left">
@@ -114,6 +129,25 @@
                         <div class="available-numbers">
                             <!-- Enemy available units (hidden) -->
                         </div>
+                    </div>
+                </div>
+
+                <!-- Advantages reminder -->
+                <div class="advantages-reminder">
+                    <div class="advantage-item">
+                        <span class="advantage-icon">⚔️</span>
+                        <span class="advantage-arrow">→</span>
+                        <span class="advantage-icon">🐴</span>
+                    </div>
+                    <div class="advantage-item">
+                        <span class="advantage-icon">🏹</span>
+                        <span class="advantage-arrow">→</span>
+                        <span class="advantage-icon">⚔️</span>
+                    </div>
+                    <div class="advantage-item">
+                        <span class="advantage-icon">🐴</span>
+                        <span class="advantage-arrow">→</span>
+                        <span class="advantage-icon">🏹</span>
                     </div>
                 </div>
 
