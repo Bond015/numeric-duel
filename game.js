@@ -58,9 +58,6 @@ function initGame() {
 
 // Загрузка статистики
 function loadStats() {
-    document.getElementById('wins-count').textContent = gameState.stats.wins;
-    document.getElementById('losses-count').textContent = gameState.stats.losses;
-
     // Загружаем никнейм
     const nicknameInput = document.getElementById('nickname-input');
     if (nicknameInput && gameState.nickname) {
@@ -1305,35 +1302,85 @@ function loadMiniLeaderboard() {
 
 // Показать лидерборд
 function showLeaderboard() {
-    const leaderboardData = getLeaderboardData();
-
-    // Отображаем лидерборд
-    const leaderboardList = document.getElementById('leaderboard-list');
-    leaderboardList.innerHTML = '';
-
-    if (leaderboardData.length === 0) {
-        leaderboardList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">Пока нет игроков в лидерборде</div>';
-    } else {
-        leaderboardData.forEach((player, index) => {
-            const row = document.createElement('div');
-            row.className = 'leaderboard-row' + (index < 3 ? ' top3' : '');
-
-            const total = player.wins + player.losses;
-            const winrate = total > 0 ? ((player.wins / total) * 100).toFixed(1) : 0;
-
-            row.innerHTML = `
-                <span class="leaderboard-rank">${index + 1}</span>
-                <span class="leaderboard-name">${player.nickname || 'Безымянный'}</span>
-                <span class="leaderboard-rating" style="color: var(--warning-color); font-weight: bold;">${player.rating || 0}</span>
-                <span class="leaderboard-wins">${player.wins}</span>
-                <span class="leaderboard-losses">${player.losses}</span>
-            `;
-
-            leaderboardList.appendChild(row);
-        });
-    }
-
+    // Запрашиваем глобальный лидерборд с сервера
+    requestFullLeaderboard();
+    
     showScreen('leaderboard');
+}
+
+// Запрос полного лидерборда
+function requestFullLeaderboard() {
+    const serverUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://numeric-duel-production.up.railway.app';
+    
+    const tempSocket = io(serverUrl);
+    tempSocket.on('connect', () => {
+        tempSocket.emit('get-global-leaderboard');
+    });
+    
+    tempSocket.on('global-leaderboard', (data) => {
+        displayFullLeaderboard(data);
+        tempSocket.disconnect();
+    });
+}
+
+// Отображение полного лидерборда
+function displayFullLeaderboard(leaderboardData) {
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const playerPosition = document.getElementById('player-position');
+    
+    if (!leaderboardList) return;
+    
+    leaderboardList.innerHTML = '';
+    
+    if (!leaderboardData || leaderboardData.length === 0) {
+        const noPlayersText = typeof i18n !== 'undefined' ? 'No players yet' : 'Пока нет игроков в лидерборде';
+        leaderboardList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${noPlayersText}</div>`;
+        if (playerPosition) playerPosition.innerHTML = '';
+        return;
+    }
+    
+    // Находим позицию текущего игрока
+    const currentNickname = gameState.nickname;
+    let playerRank = -1;
+    let playerData = null;
+    
+    leaderboardData.forEach((player, index) => {
+        if (player.nickname === currentNickname) {
+            playerRank = index + 1;
+            playerData = player;
+        }
+        
+        const noNameText = typeof i18n !== 'undefined' ? 'Anonymous' : 'Безымянный';
+        const row = document.createElement('div');
+        row.className = 'leaderboard-row' + (index < 3 ? ' top3' : '');
+        
+        row.innerHTML = `
+            <span class="leaderboard-rank">${index + 1}</span>
+            <span class="leaderboard-name">${player.nickname || noNameText}</span>
+            <span class="leaderboard-rating" style="color: var(--warning-color); font-weight: bold;">${player.rating || 0}</span>
+            <span class="leaderboard-wins">${player.wins}</span>
+            <span class="leaderboard-losses">${player.losses}</span>
+        `;
+        
+        leaderboardList.appendChild(row);
+    });
+    
+    // Отображаем позицию игрока
+    if (playerPosition) {
+        if (playerRank > 0 && playerData) {
+            const positionText = typeof i18n !== 'undefined' 
+                ? `Your position: #${playerRank} | ${playerData.nickname} | Rating: ${playerData.rating} ⭐ | Wins: ${playerData.wins} | Losses: ${playerData.losses}`
+                : `Ваша позиция: #${playerRank} | ${playerData.nickname} | Рейтинг: ${playerData.rating} ⭐ | Побед: ${playerData.wins} | Поражений: ${playerData.losses}`;
+            playerPosition.innerHTML = positionText;
+        } else {
+            const notInLBText = typeof i18n !== 'undefined' 
+                ? `You are not in the leaderboard yet. Play some matches to get ranked!`
+                : `Вы пока не в лидерборде. Сыграйте несколько матчей для участия в рейтинге!`;
+            playerPosition.innerHTML = notInLBText;
+        }
+    }
 }
 
 // Обновляем статистику в лидерборде при сохранении

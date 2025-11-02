@@ -35,17 +35,6 @@
                     <button class="btn btn-secondary" id="rules-btn">Rules</button>
                 </div>
 
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Wins:</span>
-                        <span class="stat-value" id="wins-count">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Losses:</span>
-                        <span class="stat-value" id="losses-count">0</span>
-                    </div>
-                </div>
-
                 <div class="mini-leaderboard">
                     <h3 style="margin: 20px 0 10px; color: var(--warning-color);">🏆 TOP PLAYERS</h3>
                     <div id="mini-leaderboard-list" class="mini-leaderboard-list">
@@ -149,6 +138,11 @@
         <div id="leaderboard-screen" class="screen">
             <div class="menu-content">
                 <h1 class="game-title">🏆 LEADERBOARD</h1>
+                
+                <div id="player-position" class="player-position">
+                    <!-- Player's position will be added via JS -->
+                </div>
+                
                 <div id="leaderboard-content" class="leaderboard-content">
                     <div class="leaderboard-header">
                         <span class="rank-header">#</span>

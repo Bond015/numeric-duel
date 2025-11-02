@@ -678,6 +678,18 @@ body {
 }
 
 /* Лидерборд */
+.player-position {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    border-radius: 15px;
+    border: 2px solid var(--primary-color);
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
 .leaderboard-content {
     max-width: 800px;
     margin: 20px auto;
