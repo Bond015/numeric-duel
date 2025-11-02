@@ -640,6 +640,22 @@ body {
 /* Никнейм */
 .nickname-input-container {
     margin: 20px 0;
+    position: relative;
+}
+
+.nickname-status {
+    margin-top: 5px;
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 20px;
+}
+
+.nickname-status.success {
+    color: var(--success-color);
+}
+
+.nickname-status.error {
+    color: var(--danger-color);
 }
 
 .nickname-input {

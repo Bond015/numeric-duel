@@ -154,6 +154,12 @@ function fightFlanks(yourFlanks, enemyFlanks) {
 // Обработка подключений
 io.on('connection', (socket) => {
     console.log(`Пользователь подключился: ${socket.id}`);
+    
+    // Проверка занятости никнейма
+    socket.on('check-nickname', (data) => {
+        const isTaken = globalLeaderboard.has(data.nickname);
+        socket.emit('nickname-check-result', { nickname: data.nickname, isTaken: isTaken });
+    });
 
     // Создание комнаты
     socket.on('create-room', (data) => {

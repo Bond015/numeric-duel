@@ -130,6 +130,25 @@ function setupEventListeners() {
             }
         });
     }
+    
+    // Nickname validation
+    const nicknameInput = document.getElementById('nickname-input');
+    let nicknameCheckTimeout = null;
+    if (nicknameInput) {
+        nicknameInput.addEventListener('input', () => {
+            clearTimeout(nicknameCheckTimeout);
+            const nickname = nicknameInput.value.trim();
+            
+            if (nickname.length < 3) {
+                updateNicknameStatus('nickname too short', 'error');
+                return;
+            }
+            
+            nicknameCheckTimeout = setTimeout(() => {
+                checkNicknameAvailability(nickname);
+            }, 500);
+        });
+    }
 }
 
 // Показать правила
@@ -1394,6 +1413,43 @@ function updateGlobalLeaderboard(serverData) {
         }).join('');
         miniLeaderboardList.innerHTML = html;
     }
+}
+
+// Проверка доступности никнейма
+function checkNicknameAvailability(nickname) {
+    if (!nickname || nickname.length < 3) {
+        updateNicknameStatus('', '');
+        return;
+    }
+    
+    const serverUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000' 
+        : 'https://numeric-duel-production.up.railway.app';
+    
+    const tempSocket = io(serverUrl);
+    tempSocket.on('connect', () => {
+        tempSocket.emit('check-nickname', { nickname: nickname });
+    });
+    
+    tempSocket.on('nickname-check-result', (data) => {
+        if (data.isTaken) {
+            const takenText = typeof i18n !== 'undefined' ? '⚠️ Nickname is taken!' : '⚠️ Никнейм занят!';
+            updateNicknameStatus(takenText, 'error');
+        } else {
+            const availableText = typeof i18n !== 'undefined' ? '✅ Available' : '✅ Доступен';
+            updateNicknameStatus(availableText, 'success');
+        }
+        tempSocket.disconnect();
+    });
+}
+
+// Обновление статуса никнейма
+function updateNicknameStatus(message, type) {
+    const statusEl = document.getElementById('nickname-status');
+    if (!statusEl) return;
+    
+    statusEl.textContent = message;
+    statusEl.className = 'nickname-status ' + type;
 }
 
 // Запуск игры при загрузке страницы
