@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numeric Duel - Browser Game</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="screen active">
+            <div class="menu-content">
+                <div class="language-selector">
+                    <button class="lang-btn" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="ru">RU</button>
+                </div>
+                
+                <h1 class="game-title">⚔️ NUMERIC DUEL</h1>
+                <p class="game-subtitle">To the last soldier!</p>
+
+                <div class="nickname-input-container">
+                    <input type="text" id="nickname-input" class="nickname-input" placeholder="Enter your nickname"
+                        maxlength="20">
+                </div>
+
+                <div class="menu-buttons">
+                    <button class="btn btn-primary" id="start-btn">Start Game (vs AI)</button>
+                    <button class="btn btn-primary" id="multiplayer-btn">Multiplayer</button>
+                    <button class="btn btn-secondary" id="leaderboard-btn">Leaderboard</button>
+                    <button class="btn btn-secondary" id="rules-btn">Rules</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Wins:</span>
+                        <span class="stat-value" id="wins-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Losses:</span>
+                        <span class="stat-value" id="losses-count">0</span>
+                    </div>
+                </div>
+
+                <div class="mini-leaderboard">
+                    <h3 style="margin: 20px 0 10px; color: var(--warning-color);">🏆 TOP PLAYERS</h3>
+                    <div id="mini-leaderboard-list" class="mini-leaderboard-list">
+                        <!-- Top players will be added via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selection Screen -->
+        <div id="selection-screen" class="screen">
+            <div class="selection-content">
+                <h2>Select Troops</h2>
+                <p class="hint">Choose numbers for your army. Each number is a unit with a troop type</p>
+
+                <div class="number-grid" id="number-grid">
+                    <!-- Numbers will be added via JS -->
+                </div>
+
+                <div class="selected-display">
+                    <h3>Your Army:</h3>
+                    <div class="selected-numbers" id="selected-numbers"></div>
+                    <p class="hint-small">Click the number again to deselect</p>
+                </div>
+
+                <button class="btn btn-primary" id="ready-btn" disabled>To Battle!</button>
+            </div>
+        </div>
+
+        <!-- Flank Setup Screen -->
+        <div id="flank-setup-screen" class="screen">
+            <div class="flank-content">
+                <h2 id="round-title">Turn 1</h2>
+                <p class="hint">Place troops on flanks</p>
+
+                <div class="flank-battlefield">
+                    <!-- Your flanks -->
+                    <div class="flank-player" id="your-flanks">
+                        <h3>Your Troops</h3>
+
+                        <div class="flank-slots">
+                            <div class="flank-slot flank-left">
+                                <div class="flank-label">Left</div>
+                                <!-- Unit will appear here -->
+                            </div>
+                            <div class="flank-slot flank-center">
+                                <div class="flank-label">Center</div>
+                            </div>
+                            <div class="flank-slot flank-right">
+                                <div class="flank-label">Right</div>
+                            </div>
+                        </div>
+
+                        <div class="available-numbers">
+                            <!-- Available units -->
+                        </div>
+
+                        <button class="btn btn-primary start-battle-btn" id="flank-ready-btn">Start Battle!</button>
+                    </div>
+
+                    <!-- Enemy flanks -->
+                    <div class="flank-player" id="enemy-flanks">
+                        <h3>Enemy</h3>
+
+                        <div class="flank-slots">
+                            <div class="flank-slot flank-left">
+                                <div class="flank-label">Left</div>
+                            </div>
+                            <div class="flank-slot flank-center">
+                                <div class="flank-label">Center</div>
+                            </div>
+                            <div class="flank-slot flank-right">
+                                <div class="flank-label">Right</div>
+                            </div>
+                        </div>
+
+                        <div class="available-numbers">
+                            <!-- Enemy available units (hidden) -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="battle-log" id="battle-log">
+                    <div class="log-entry">Preparing for battle...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <div class="result-content">
+                <div class="result-icon" id="result-icon">🎯</div>
+                <h2 id="result-title">Victory!</h2>
+                <p id="result-message">You won this duel</p>
+                <button class="btn btn-primary" id="play-again-btn">Play Again</button>
+                <button class="btn btn-secondary" id="menu-btn">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Leaderboard Screen -->
+        <div id="leaderboard-screen" class="screen">
+            <div class="menu-content">
+                <h1 class="game-title">🏆 LEADERBOARD</h1>
+                <div id="leaderboard-content" class="leaderboard-content">
+                    <div class="leaderboard-header">
+                        <span class="rank-header">#</span>
+                        <span class="name-header">Nickname</span>
+                        <span class="stats-header">Rating</span>
+                        <span class="stats-header">Wins</span>
+                        <span class="stats-header">Losses</span>
+                    </div>
+                    <div id="leaderboard-list" class="leaderboard-list">
+                        <!-- Leaders will be added via JS -->
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="leaderboard-back-btn">Back</button>
+            </div>
+        </div>
+
+        <!-- Multiplayer Screen (Lobby) -->
+        <div id="multiplayer-screen" class="screen">
+            <div class="menu-content">
+                <h1 class="game-title">🌐 MULTIPLAYER</h1>
+                <div id="lobby-status" class="lobby-status">
+                    <p>Click "Find Match" for quick match</p>
+                </div>
+                <div id="room-info" class="room-info" style="display: none;">
+                    <h3>Room: <span id="room-id-display"></span></h3>
+                    <p>Players: <span id="players-count">1</span>/2</p>
+                </div>
+                <button class="btn btn-primary" id="find-match-btn">Find Match</button>
+                <button class="btn btn-secondary" id="back-to-menu-btn">Back</button>
+            </div>
+        </div>
+
+        <!-- Rules Modal -->
+        <div id="rules-modal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Game Rules</h2>
+                <div class="rules-content">
+                    <h3>Goal</h3>
+                    <p>Destroy all enemy troops!</p>
+
+                    <h3>Unit Types</h3>
+                    <ul class="rules-list">
+                        <li><strong>⚔️ Warriors</strong> - strong against 🐴 Cavalry</li>
+                        <li><strong>🏹 Archers</strong> - strong against ⚔️ Warriors</li>
+                        <li><strong>🐴 Cavalry</strong> - strong against 🏹 Archers</li>
+                    </ul>
+
+                    <h3>Combat Mechanics</h3>
+                    <ul class="rules-list">
+                        <li>Number = dice rolls (0 to 1)</li>
+                        <li>All rolls sum = damage</li>
+                        <li><strong>Advantage:</strong> damage × 1.5</li>
+                        <li><strong>Equal:</strong> damage × 1.0</li>
+                        <li><strong>Weakness:</strong> damage × 0.5</li>
+                        <li>After combat, subtract damage from number</li>
+                        <li>Number = 0? Unit destroyed!</li>
+                    </ul>
+
+                    <h3>Flanks</h3>
+                    <p>Your left flank hits enemy left, center hits center, right hits enemy right.</p>
+
+                    <h3>Victory</h3>
+                    <p>The one who destroyed all enemy units wins!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="i18n.js"></script>
+    <script src="game.js"></script>
+</body>
+
+</html>
