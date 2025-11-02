@@ -954,7 +954,11 @@ function showScreen(screenName) {
 // Мультиплеер функции
 function initMultiplayer() {
     if (!socket) {
-        socket = io();
+        // Use production server if available, otherwise localhost
+        const serverUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'https://numeric-duel-production.up.railway.app';
+        socket = io(serverUrl);
         setupSocketListeners();
     }
     showScreen('multiplayer');
