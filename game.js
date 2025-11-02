@@ -118,6 +118,7 @@ function setupEventListeners() {
     document.getElementById('leaderboard-back-btn').addEventListener('click', () => showScreen('menu'));
     document.getElementById('ready-btn').addEventListener('click', startBattle);
     document.getElementById('flank-ready-btn').addEventListener('click', startFlankBattle);
+    document.getElementById('surrender-btn').addEventListener('click', surrender);
     document.getElementById('play-again-btn').addEventListener('click', resetGame);
     document.getElementById('menu-btn').addEventListener('click', backToMenu);
 
@@ -1659,6 +1660,26 @@ function displayUsernames(yourNickname, enemyNickname) {
     
     if (enemyDisplay) {
         enemyDisplay.textContent = enemyNickname || 'Enemy';
+    }
+}
+
+// Surrender function
+function surrender() {
+    const confirmMsg = typeof i18n !== 'undefined' 
+        ? i18n.t('surrenderConfirm')
+        : 'Вы уверены, что хотите сдаться?';
+    
+    if (!confirm(confirmMsg)) return;
+    
+    // In multiplayer
+    if (gameState.multiplayer.isMultiplayer && socket && socket.connected) {
+        socket.emit('surrender', { roomId: gameState.multiplayer.roomId });
+        gameState.stats.losses++;
+        saveStats();
+        updateLeaderboard(false); // Defeat: -2 points
+    } else {
+        // Single player - just go to menu
+        resetGame();
     }
 }
 

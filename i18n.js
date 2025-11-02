@@ -35,6 +35,8 @@ const i18n = {
             right: 'Правый',
             startBattleBtn: 'Начать бой!',
             preparingBattle: 'Подготовка к бою...',
+            surrenderBtn: '🏳️ Сдаться',
+            surrenderConfirm: 'Вы уверены, что хотите сдаться?',
             
             // Result screen
             victory: 'Победа!',
@@ -132,6 +134,8 @@ const i18n = {
             right: 'Right',
             startBattleBtn: 'Start Battle!',
             preparingBattle: 'Preparing for battle...',
+            surrenderBtn: '🏳️ Surrender',
+            surrenderConfirm: 'Are you sure you want to surrender?',
             
             // Result screen
             victory: 'Victory!',
@@ -288,6 +292,9 @@ const i18n = {
             
             const flankReadyBtn = document.getElementById('flank-ready-btn');
             if (flankReadyBtn) flankReadyBtn.textContent = this.t('startBattleBtn');
+            
+            const surrenderBtn = document.getElementById('surrender-btn');
+            if (surrenderBtn) surrenderBtn.textContent = this.t('surrenderBtn');
             
             const battleLog = document.getElementById('battle-log');
             if (battleLog && battleLog.querySelector('.log-entry')) {

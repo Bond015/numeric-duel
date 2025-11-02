@@ -395,6 +395,30 @@ io.on('connection', (socket) => {
         // Broadcast to all connected clients
         io.emit('chat-message', data);
     });
+    
+    // Сдача
+    socket.on('surrender', (data) => {
+        const room = rooms.get(data.roomId);
+        if (!room) return;
+        
+        const surrenderingPlayer = room.players.find(p => p.id === socket.id);
+        if (!surrenderingPlayer) return;
+        
+        // Находим победителя (другой игрок)
+        const winner = room.players.find(p => p.id !== socket.id);
+        
+        if (winner) {
+            // Обновляем лидерборд
+            updateGlobalLeaderboard(winner.playerId, winner.name, true);
+            updateGlobalLeaderboard(surrenderingPlayer.playerId, surrenderingPlayer.name, false);
+            
+            // Отправляем результаты
+            io.to(data.roomId).emit('game-over', { winner: winner.id, winnerName: winner.name });
+        }
+        
+        // Удаляем комнату
+        rooms.delete(data.roomId);
+    });
 });
 
 function startGame(roomId, room) {
