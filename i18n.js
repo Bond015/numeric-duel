@@ -278,11 +278,12 @@ const i18n = {
             const hint = flankScreen.querySelector('.hint');
             if (hint) hint.textContent = this.t('setupFlanks');
             
-            const yourTroops = flankScreen.querySelector('#your-flanks h3');
-            if (yourTroops) yourTroops.textContent = this.t('yourTroops');
+            // Don't update nicknames here - they are set dynamically by game.js
+            // const yourTroops = flankScreen.querySelector('#your-flanks h3');
+            // if (yourTroops) yourTroops.textContent = this.t('yourTroops');
             
-            const enemyTroops = flankScreen.querySelector('#enemy-flanks h3');
-            if (enemyTroops) enemyTroops.textContent = this.t('enemyTroops');
+            // const enemyTroops = flankScreen.querySelector('#enemy-flanks h3');
+            // if (enemyTroops) enemyTroops.textContent = this.t('enemyTroops');
             
             const flankLabels = flankScreen.querySelectorAll('.flank-label');
             flankLabels.forEach((label, idx) => {
