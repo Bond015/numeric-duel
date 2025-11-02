@@ -39,11 +39,17 @@ let gameState = {
         playerIndex: null
     },
     nickname: localStorage.getItem('gameNickname') || '',
+    playerId: localStorage.getItem('gamePlayerId') || generatePlayerId(),
     stats: {
         wins: parseInt(localStorage.getItem('gameWins') || '0'),
         losses: parseInt(localStorage.getItem('gameLosses') || '0')
     }
 };
+
+// Генерация уникального ID игрока
+function generatePlayerId() {
+    return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
 
 // Инициализация игры
 function initGame() {
@@ -73,6 +79,7 @@ function loadStats() {
 function saveStats() {
     localStorage.setItem('gameWins', gameState.stats.wins);
     localStorage.setItem('gameLosses', gameState.stats.losses);
+    localStorage.setItem('gamePlayerId', gameState.playerId);
 
     // Сохраняем никнейм
     const nicknameInput = document.getElementById('nickname-input');
@@ -1183,11 +1190,11 @@ function setupSocketListeners() {
 }
 
 function createRoom() {
-    socket.emit('create-room', { name: gameState.nickname || 'Player' });
+    socket.emit('create-room', { name: gameState.nickname || 'Player', playerId: gameState.playerId });
 }
 
 function joinRoom(roomId) {
-    socket.emit('join-room', { roomId: roomId, name: gameState.nickname || 'Player' });
+    socket.emit('join-room', { roomId: roomId, name: gameState.nickname || 'Player', playerId: gameState.playerId });
 }
 
 function findMatch() {
@@ -1195,7 +1202,7 @@ function findMatch() {
     const searchText = typeof i18n !== 'undefined' ? '🔍 Searching for opponent...' : '🔍 Поиск соперника...';
     lobbyStatus.innerHTML = `<p>${searchText}</p>`;
     lobbyStatus.classList.add('searching');
-    socket.emit('find-match', { name: gameState.nickname || 'Player' });
+    socket.emit('find-match', { name: gameState.nickname || 'Player', playerId: gameState.playerId });
 }
 
 // Таймер автоготовности
@@ -1509,7 +1516,7 @@ function checkNicknameAvailability(nickname) {
     
     const tempSocket = io(serverUrl);
     tempSocket.on('connect', () => {
-        tempSocket.emit('check-nickname', { nickname: nickname });
+        tempSocket.emit('check-nickname', { nickname: nickname, playerId: gameState.playerId });
     });
     
     tempSocket.on('nickname-check-result', (data) => {

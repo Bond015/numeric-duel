@@ -155,9 +155,15 @@ function fightFlanks(yourFlanks, enemyFlanks) {
 io.on('connection', (socket) => {
     console.log(`Пользователь подключился: ${socket.id}`);
     
-    // Проверка занятости никнейма
+    // Проверка занятости никнейма (теперь проверяем только другим playerId)
     socket.on('check-nickname', (data) => {
-        const isTaken = globalLeaderboard.has(data.nickname);
+        let isTaken = false;
+        for (let [playerId, player] of globalLeaderboard.entries()) {
+            if (player.nickname === data.nickname && playerId !== data.playerId) {
+                isTaken = true;
+                break;
+            }
+        }
         socket.emit('nickname-check-result', { nickname: data.nickname, isTaken: isTaken });
     });
 
@@ -167,6 +173,7 @@ io.on('connection', (socket) => {
         rooms.set(roomId, {
             players: [{
                 id: socket.id,
+                playerId: data.playerId || socket.id,
                 name: data.name || 'Player 1',
                 numbers: [],
                 flanks: [null, null, null],
@@ -199,6 +206,7 @@ io.on('connection', (socket) => {
         
         room.players.push({
             id: socket.id,
+            playerId: data.playerId || socket.id,
             name: data.name || 'Player 2',
             numbers: [],
             flanks: [null, null, null],
@@ -231,6 +239,7 @@ io.on('connection', (socket) => {
                 foundRoom = room;
                 foundRoom.players.push({
                     id: socket.id,
+                    playerId: data.playerId || socket.id,
                     name: data.name || 'Player 2',
                     numbers: [],
                     flanks: [null, null, null],
@@ -259,6 +268,7 @@ io.on('connection', (socket) => {
         rooms.set(roomId, {
             players: [{
                 id: socket.id,
+                playerId: data.playerId || socket.id,
                 name: data.name || 'Player 1',
                 numbers: [],
                 flanks: [null, null, null],
@@ -449,16 +459,16 @@ function performBattle(roomId, room) {
     // Проверка победы
     if (player1.numbers.length === 0) {
         room.gameState = 'finished';
-        updateGlobalLeaderboard(player2.name, true);
-        updateGlobalLeaderboard(player1.name, false);
+        updateGlobalLeaderboard(player2.playerId, player2.name, true);
+        updateGlobalLeaderboard(player1.playerId, player1.name, false);
         io.to(roomId).emit('game-over', { winner: player2.id, winnerName: player2.name });
         return;
     }
     
     if (player2.numbers.length === 0) {
         room.gameState = 'finished';
-        updateGlobalLeaderboard(player1.name, true);
-        updateGlobalLeaderboard(player2.name, false);
+        updateGlobalLeaderboard(player1.playerId, player1.name, true);
+        updateGlobalLeaderboard(player2.playerId, player2.name, false);
         io.to(roomId).emit('game-over', { winner: player1.id, winnerName: player1.name });
         return;
     }
@@ -563,10 +573,10 @@ function generateRoomId() {
 }
 
 // Обновление глобального лидерборда
-function updateGlobalLeaderboard(nickname, won) {
-    if (!nickname) return;
+function updateGlobalLeaderboard(playerId, nickname, won) {
+    if (!playerId || !nickname) return;
     
-    const player = globalLeaderboard.get(nickname) || { nickname, wins: 0, losses: 0, rating: 0 };
+    const player = globalLeaderboard.get(playerId) || { playerId, nickname, wins: 0, losses: 0, rating: 0 };
     
     if (won) {
         player.wins++;
@@ -576,7 +586,10 @@ function updateGlobalLeaderboard(nickname, won) {
         player.rating = Math.max(0, player.rating - 2);
     }
     
-    globalLeaderboard.set(nickname, player);
+    // Обновляем никнейм на случай изменения
+    player.nickname = nickname;
+    
+    globalLeaderboard.set(playerId, player);
 }
 
 // Получить топ игроков
