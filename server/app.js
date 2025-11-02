@@ -44,6 +44,9 @@ const rooms = new Map();
 // Счетчик уникальных ID для юнитов
 let globalUnitIdCounter = 0;
 
+// Глобальный лидерборд (в памяти, для демо)
+const globalLeaderboard = new Map();
+
 // Функции игры
 function getUnitType(num) {
     const index = (num - 1) % 20;
@@ -331,6 +334,12 @@ io.on('connection', (socket) => {
             }
         });
     });
+
+    // Запрос глобального лидерборда
+    socket.on('get-global-leaderboard', () => {
+        const topPlayers = getTopPlayers(10);
+        socket.emit('global-leaderboard', topPlayers);
+    });
 });
 
 function startGame(roomId, room) {
@@ -431,12 +440,16 @@ function performBattle(roomId, room) {
     // Проверка победы
     if (player1.numbers.length === 0) {
         room.gameState = 'finished';
+        updateGlobalLeaderboard(player2.name, true);
+        updateGlobalLeaderboard(player1.name, false);
         io.to(roomId).emit('game-over', { winner: player2.id, winnerName: player2.name });
         return;
     }
     
     if (player2.numbers.length === 0) {
         room.gameState = 'finished';
+        updateGlobalLeaderboard(player1.name, true);
+        updateGlobalLeaderboard(player2.name, false);
         io.to(roomId).emit('game-over', { winner: player1.id, winnerName: player1.name });
         return;
     }
@@ -535,6 +548,38 @@ function generateComboAttempt(numbers, size) {
 
 function generateRoomId() {
     return Math.random().toString(36).substr(2, 9);
+}
+
+// Обновление глобального лидерборда
+function updateGlobalLeaderboard(nickname, won) {
+    if (!nickname) return;
+    
+    const player = globalLeaderboard.get(nickname) || { nickname, wins: 0, losses: 0, rating: 0 };
+    
+    if (won) {
+        player.wins++;
+        player.rating = Math.max(0, player.rating + 2);
+    } else {
+        player.losses++;
+        player.rating = Math.max(0, player.rating - 2);
+    }
+    
+    globalLeaderboard.set(nickname, player);
+}
+
+// Получить топ игроков
+function getTopPlayers(limit = 10) {
+    const players = Array.from(globalLeaderboard.values());
+    
+    players.sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        const aWR = (a.wins + a.losses) > 0 ? a.wins / (a.wins + a.losses) : 0;
+        const bWR = (b.wins + b.losses) > 0 ? b.wins / (b.wins + b.losses) : 0;
+        if (bWR !== aWR) return bWR - aWR;
+        return b.wins - a.wins;
+    });
+    
+    return players.slice(0, limit);
 }
 
 // Запуск сервера

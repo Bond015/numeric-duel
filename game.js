@@ -67,8 +67,9 @@ function loadStats() {
         nicknameInput.value = gameState.nickname;
     }
 
-    // Загружаем мини-лидерборд
+    // Загружаем мини-лидерборд (локальный + запрашиваем глобальный)
     loadMiniLeaderboard();
+    requestGlobalLeaderboard();
 }
 
 // Сохранение статистики
@@ -1122,22 +1123,29 @@ function setupSocketListeners() {
     });
 
     socket.on('player-disconnected', () => {
-        alert('Соперник отключился');
+        const msg = typeof i18n !== 'undefined' ? 'Opponent disconnected' : 'Соперник отключился';
+        alert(msg);
         backToMenu();
+    });
+
+    // Получение глобального лидерборда
+    socket.on('global-leaderboard', (data) => {
+        updateGlobalLeaderboard(data);
     });
 }
 
 function createRoom() {
-    socket.emit('create-room', { name: 'Player' });
+    socket.emit('create-room', { name: gameState.nickname || 'Player' });
 }
 
 function joinRoom(roomId) {
-    socket.emit('join-room', { roomId: roomId, name: 'Player' });
+    socket.emit('join-room', { roomId: roomId, name: gameState.nickname || 'Player' });
 }
 
 function findMatch() {
-    document.getElementById('lobby-status').innerHTML = '<p style="color: #f59e0b;">🔍 Поиск игры...</p>';
-    socket.emit('find-match', { name: 'Player' });
+    const searchText = typeof i18n !== 'undefined' ? '🔍 Searching for game...' : '🔍 Поиск игры...';
+    document.getElementById('lobby-status').innerHTML = `<p style="color: #f59e0b;">${searchText}</p>`;
+    socket.emit('find-match', { name: gameState.nickname || 'Player' });
 }
 
 // Таймер автоготовности
@@ -1343,6 +1351,49 @@ function updateLeaderboard(won = null) {
 
     // Обновляем мини-лидерборд после изменения рейтинга
     loadMiniLeaderboard();
+}
+
+// Запрос глобального лидерборда с сервера
+function requestGlobalLeaderboard() {
+    if (socket && socket.connected) {
+        socket.emit('get-global-leaderboard');
+    } else {
+        // Подключаемся специально для получения лидерборда
+        const serverUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'https://numeric-duel-production.up.railway.app';
+        const tempSocket = io(serverUrl);
+        tempSocket.on('connect', () => {
+            tempSocket.emit('get-global-leaderboard');
+        });
+        tempSocket.on('global-leaderboard', (data) => {
+            updateGlobalLeaderboard(data);
+            tempSocket.disconnect();
+        });
+    }
+}
+
+// Обновление глобального лидерборда на клиенте
+function updateGlobalLeaderboard(serverData) {
+    if (!serverData || serverData.length === 0) return;
+    
+    const miniLeaderboardList = document.getElementById('mini-leaderboard-list');
+    const leaderboardList = document.getElementById('leaderboard-list');
+    
+    if (miniLeaderboardList) {
+        const html = serverData.slice(0, 5).map((player, index) => {
+            const noPlayerText = typeof i18n !== 'undefined' ? 'No players yet' : 'Пока нет игроков';
+            const noNameText = typeof i18n !== 'undefined' ? 'Anonymous' : 'Безымянный';
+            return `
+                <div class="mini-leaderboard-row ${index < 3 ? 'top3' : ''}">
+                    <span class="mini-leaderboard-rank">${index + 1}</span>
+                    <span class="mini-leaderboard-name">${player.nickname || noNameText}</span>
+                    <span class="mini-leaderboard-rating">${player.rating || 0} ⭐</span>
+                </div>
+            `;
+        }).join('');
+        miniLeaderboardList.innerHTML = html;
+    }
 }
 
 // Запуск игры при загрузке страницы
