@@ -429,6 +429,11 @@ function displayFlankSetup() {
         ? `${i18n.t('turn')} ${gameState.turnNumber}` 
         : `Ход ${gameState.turnNumber}`;
     document.getElementById('round-title').textContent = turnTitle;
+    
+    // Update nicknames for single player
+    if (!gameState.multiplayer.isMultiplayer) {
+        displayUsernames(gameState.nickname || 'Your Troops', 'Enemy');
+    }
 }
 
 // Отображение опций флангов
