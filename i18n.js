@@ -1,8 +1,8 @@
 // System localization for Numeric Duel
-// Main language: Russian, secondary: English
+// Main language: English, secondary: Russian
 
 const i18n = {
-    currentLang: localStorage.getItem('gameLanguage') || 'ru',
+    currentLang: localStorage.getItem('gameLanguage') || 'en',
     
     translations: {
         ru: {
