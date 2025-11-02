@@ -930,9 +930,22 @@ function updateBattleLog(message, type = 'info') {
 
 // Показать результат
 function showResult(icon, title, message, type) {
-    document.getElementById('result-icon').textContent = icon;
-    document.getElementById('result-title').textContent = title;
-    document.getElementById('result-message').textContent = message;
+    const resultIcon = document.getElementById('result-icon');
+    const resultTitle = document.getElementById('result-title');
+    const resultMessage = document.getElementById('result-message');
+    
+    resultIcon.textContent = icon;
+    resultTitle.textContent = title;
+    resultMessage.textContent = message;
+    
+    // Добавляем класс для победы/поражения
+    resultIcon.className = 'result-icon';
+    if (type === 'win') {
+        resultIcon.classList.add('victory');
+    } else if (type === 'loss') {
+        resultIcon.classList.add('defeat');
+    }
+    
     showScreen('result');
 }
 
@@ -984,14 +997,18 @@ function initMultiplayer() {
 function setupSocketListeners() {
     socket.on('connect', () => {
         console.log('Connected to server');
+        const lobbyStatus = document.getElementById('lobby-status');
+        lobbyStatus.classList.remove('searching');
         const msg = typeof i18n !== 'undefined' ? i18n.t('connected') : 'Подключено к серверу';
-        document.getElementById('lobby-status').innerHTML = `<p style="color: #10b981;">✅ ${msg}</p>`;
+        lobbyStatus.innerHTML = `<p>✅ ${msg}</p>`;
     });
 
     socket.on('disconnect', () => {
         console.log('Disconnected from server');
+        const lobbyStatus = document.getElementById('lobby-status');
+        lobbyStatus.classList.remove('searching');
         const msg = typeof i18n !== 'undefined' ? i18n.t('disconnected') : 'Отключено от сервера';
-        document.getElementById('lobby-status').innerHTML = `<p style="color: #ef4444;">❌ ${msg}</p>`;
+        lobbyStatus.innerHTML = `<p>❌ ${msg}</p>`;
     });
 
     socket.on('room-created', (data) => {
@@ -1001,8 +1018,10 @@ function setupSocketListeners() {
 
         document.getElementById('room-id-display').textContent = data.roomId;
         document.getElementById('room-info').style.display = 'block';
+        const lobbyStatus = document.getElementById('lobby-status');
+        lobbyStatus.classList.remove('searching');
         const msg = typeof i18n !== 'undefined' ? i18n.t('roomCreated') : 'Комната создана! Ожидание второго игрока...';
-        document.getElementById('lobby-status').innerHTML = `<p style="color: #3b82f6;">${msg}</p>`;
+        lobbyStatus.innerHTML = `<p>${msg}</p>`;
     });
 
     socket.on('joined-room', (data) => {
@@ -1012,7 +1031,9 @@ function setupSocketListeners() {
 
         document.getElementById('room-id-display').textContent = data.roomId;
         document.getElementById('room-info').style.display = 'block';
-        document.getElementById('lobby-status').innerHTML = '<p style="color: #3b82f6;">Connected to room!</p>';
+        const lobbyStatus = document.getElementById('lobby-status');
+        lobbyStatus.classList.remove('searching');
+        lobbyStatus.innerHTML = '<p>Connected to room!</p>';
     });
 
     socket.on('match-found', (data) => {
@@ -1020,10 +1041,13 @@ function setupSocketListeners() {
         gameState.multiplayer.playerIndex = data.playerIndex;
         gameState.multiplayer.isMultiplayer = true;
 
+        const lobbyStatus = document.getElementById('lobby-status');
         if (data.playerIndex === 0) {
-            document.getElementById('lobby-status').innerHTML = '<p style="color: #f59e0b;">⏳ Searching for opponent...</p>';
+            lobbyStatus.classList.add('searching');
+            lobbyStatus.innerHTML = '<p>⏳ Searching for opponent...</p>';
         } else {
-            document.getElementById('lobby-status').innerHTML = '<p style="color: #10b981;">✅ Opponent found! Starting game...</p>';
+            lobbyStatus.classList.remove('searching');
+            lobbyStatus.innerHTML = '<p>✅ Opponent found! Starting game...</p>';
         }
     });
 
@@ -1159,8 +1183,10 @@ function joinRoom(roomId) {
 }
 
 function findMatch() {
-    const searchText = typeof i18n !== 'undefined' ? '🔍 Searching for game...' : '🔍 Поиск игры...';
-    document.getElementById('lobby-status').innerHTML = `<p style="color: #f59e0b;">${searchText}</p>`;
+    const lobbyStatus = document.getElementById('lobby-status');
+    const searchText = typeof i18n !== 'undefined' ? '🔍 Searching for opponent...' : '🔍 Поиск соперника...';
+    lobbyStatus.innerHTML = `<p>${searchText}</p>`;
+    lobbyStatus.classList.add('searching');
     socket.emit('find-match', { name: gameState.nickname || 'Player' });
 }
 
