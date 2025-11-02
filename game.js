@@ -1106,8 +1106,12 @@ function setupSocketListeners() {
         }
         
         // Обновляем никнеймы
+        console.log('start-placing received:', data);
         if (data.yourNickname && data.enemyNickname) {
             displayUsernames(data.yourNickname, data.enemyNickname);
+        } else {
+            // Use defaults if not provided
+            displayUsernames(gameState.nickname || 'Your Troops', 'Enemy');
         }
 
         // Сбрасываем флаг placed для всех отрядов и фланги
@@ -1632,8 +1636,11 @@ function setupChatListeners() {
 
 // Display usernames in battle
 function displayUsernames(yourNickname, enemyNickname) {
+    console.log('Displaying usernames:', yourNickname, enemyNickname);
     const yourDisplay = document.getElementById('your-nickname-display');
     const enemyDisplay = document.getElementById('enemy-nickname-display');
+    
+    console.log('yourDisplay:', yourDisplay, 'enemyDisplay:', enemyDisplay);
     
     if (yourDisplay) {
         yourDisplay.textContent = yourNickname || 'Your Troops';
