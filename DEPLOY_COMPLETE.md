@@ -2,8 +2,8 @@
 
 ## ✅ Что было сделано:
 
-1. **Фронтенд задеплоен на Netlify**
-   - URL: https://animated-cheesecake-8aeeab.netlify.app/
+1. **Фронтенд задеплоен на Vercel**
+   - URL: https://numeric-duel-bsmvpn5pa-bond015s-projects.vercel.app/
    - Английский и русский языки
    - Фавикон добавлен
 
@@ -19,12 +19,12 @@
 ## 🧪 Тестирование
 
 ### Тест 1: Одиночная игра
-1. Открой https://animated-cheesecake-8aeeab.netlify.app/
+1. Открой https://numeric-duel-bsmvpn5pa-bond015s-projects.vercel.app/
 2. Нажми "Start Game (vs AI)"
 3. Игра должна запуститься
 
 ### Тест 2: Мультиплеер
-1. Открой https://animated-cheesecake-8aeeab.netlify.app/ в **ДВУХ** вкладках
+1. Открой https://numeric-duel-bsmvpn5pa-bond015s-projects.vercel.app/ в **ДВУХ** вкладках
 2. В обеих нажми "Multiplayer" → "Find Match"
 3. Должно найти соперника и начать игру!
 
@@ -35,7 +35,7 @@
 
 ## 📊 Статус деплоя
 
-- ✅ Фронтенд: Netlify (автоматический деплой)
+- ✅ Фронтенд: Vercel (автоматический деплой)
 - ✅ Сервер: Railway (автоматический деплой)
 - ✅ Мультиплеер: работает
 - ✅ Локализация: EN/RU
@@ -53,7 +53,7 @@ git commit -m "Update: описание изменений"
 git push
 ```
 
-Netlify и Railway автоматически перезапустят деплой!
+Vercel и Railway автоматически перезапустят деплой!
 
 ## 🚀 Следующие шаги
 
@@ -64,10 +64,10 @@ Netlify и Railway автоматически перезапустят депл�
 
 ## 📝 Важные ссылки
 
-- **Фронтенд**: https://animated-cheesecake-8aeeab.netlify.app/
+- **Фронтенд**: https://numeric-duel-bsmvpn5pa-bond015s-projects.vercel.app/
 - **Сервер**: https://numeric-duel-production.up.railway.app
 - **GitHub**: https://github.com/Bond015/numeric-duel
-- **Netlify Dashboard**: https://app.netlify.com
+- **Vercel Dashboard**: https://vercel.com/dashboard
 - **Railway Dashboard**: https://railway.app
 
 ## 🎮 Игра работает онлайн!
