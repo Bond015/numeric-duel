@@ -56,12 +56,12 @@ function generatePlayerId() {
 function initGame() {
     loadStats();
     setupEventListeners();
-    
+
     // Initialize localization
     if (typeof i18n !== 'undefined') {
         i18n.updateAllTexts();
     }
-    
+
     // Initialize global chat connection
     initGlobalChat();
 }
@@ -69,10 +69,10 @@ function initGame() {
 // Initialize global chat connection
 function initGlobalChat() {
     // Use production server if available, otherwise localhost
-    const serverUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
+    const serverUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
         : 'https://numeric-duel-production.up.railway.app';
-    
+
     // Create socket for global chat (or reuse main socket if exists)
     if (!socket) {
         socket = io(serverUrl);
@@ -143,7 +143,7 @@ function setupEventListeners() {
             }
         });
     });
-    
+
     // Set initial active language button
     if (typeof i18n !== 'undefined') {
         const currentLang = i18n.currentLang || 'en';
@@ -153,7 +153,7 @@ function setupEventListeners() {
             }
         });
     }
-    
+
     // Nickname validation
     const nicknameInput = document.getElementById('nickname-input');
     let nicknameCheckTimeout = null;
@@ -161,18 +161,18 @@ function setupEventListeners() {
         nicknameInput.addEventListener('input', () => {
             clearTimeout(nicknameCheckTimeout);
             const nickname = nicknameInput.value.trim();
-            
+
             if (nickname.length < 3) {
                 updateNicknameStatus('nickname too short', 'error');
                 return;
             }
-            
+
             nicknameCheckTimeout = setTimeout(() => {
                 checkNicknameAvailability(nickname);
             }, 500);
         });
     }
-    
+
     // Chat functionality
     setupChatListeners();
 }
@@ -413,8 +413,8 @@ function prepareForNextTurn() {
     displayFlankSetup();
     showScreen('flank-setup');
 
-    const turnMsg = typeof i18n !== 'undefined' 
-        ? `${i18n.t('turn')} ${gameState.turnNumber}!` 
+    const turnMsg = typeof i18n !== 'undefined'
+        ? `${i18n.t('turn')} ${gameState.turnNumber}!`
         : `Ход ${gameState.turnNumber}! Подготовьте фланги.`;
     updateBattleLog(turnMsg, 'info');
 }
@@ -425,11 +425,11 @@ function displayFlankSetup() {
     displayFlankOptions('enemy-flanks', gameState.enemyNumbers, gameState.enemyFlanks);
 
     // Обновляем заголовок хода
-    const turnTitle = typeof i18n !== 'undefined' 
-        ? `${i18n.t('turn')} ${gameState.turnNumber}` 
+    const turnTitle = typeof i18n !== 'undefined'
+        ? `${i18n.t('turn')} ${gameState.turnNumber}`
         : `Ход ${gameState.turnNumber}`;
     document.getElementById('round-title').textContent = turnTitle;
-    
+
     // Update nicknames for single player
     if (!gameState.multiplayer.isMultiplayer) {
         displayUsernames(gameState.nickname || 'Your Troops', 'Enemy');
@@ -967,11 +967,11 @@ function showResult(icon, title, message, type) {
     const resultIcon = document.getElementById('result-icon');
     const resultTitle = document.getElementById('result-title');
     const resultMessage = document.getElementById('result-message');
-    
+
     resultIcon.textContent = icon;
     resultTitle.textContent = title;
     resultMessage.textContent = message;
-    
+
     // Добавляем класс для победы/поражения
     resultIcon.className = 'result-icon';
     if (type === 'win') {
@@ -979,7 +979,7 @@ function showResult(icon, title, message, type) {
     } else if (type === 'loss') {
         resultIcon.classList.add('defeat');
     }
-    
+
     showScreen('result');
 }
 
@@ -1017,13 +1017,24 @@ function showScreen(screenName) {
 
 // Мультиплеер функции
 function initMultiplayer() {
-    // Save nickname before starting multiplayer
+    // Check if nickname is entered
+    const nickname = document.getElementById('nickname-input').value.trim();
+    if (!nickname) {
+        const errorMsg = typeof i18n !== 'undefined'
+            ? i18n.t('enterNickname') || 'Please enter your nickname first!'
+            : 'Пожалуйста, введите никнейм!';
+        alert(errorMsg);
+        return;
+    }
+
+    // Save nickname and stats before starting multiplayer
+    gameState.nickname = nickname;
     saveStats();
-    
+
     if (!socket) {
         // Use production server if available, otherwise localhost
-        const serverUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000' 
+        const serverUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
             : 'https://numeric-duel-production.up.railway.app';
         socket = io(serverUrl);
         setupSocketListeners();
@@ -1035,7 +1046,7 @@ function setupSocketListeners() {
     // Prevent duplicate listeners
     if (socketListenersSetup) return;
     socketListenersSetup = true;
-    
+
     socket.on('connect', () => {
         console.log('Connected to server');
         const lobbyStatus = document.getElementById('lobby-status');
@@ -1112,7 +1123,7 @@ function setupSocketListeners() {
         if (data.yourArmy) {
             gameState.yourNumbers = data.yourArmy;
         }
-        
+
         // Обновляем никнеймы
         if (data.yourNickname && data.enemyNickname) {
             displayUsernames(data.yourNickname, data.enemyNickname);
@@ -1126,8 +1137,8 @@ function setupSocketListeners() {
         gameState.yourFlanks = [null, null, null];
         gameState.enemyFlanks = [null, null, null];
 
-        const turnMsg = typeof i18n !== 'undefined' 
-            ? `${i18n.t('turn')} ${data.turnNumber}!` 
+        const turnMsg = typeof i18n !== 'undefined'
+            ? `${i18n.t('turn')} ${data.turnNumber}!`
             : `Ход ${data.turnNumber}! Расставьте войска на фланги.`;
         updateBattleLog(turnMsg, 'info');
         displayFlankSetup();
@@ -1189,17 +1200,24 @@ function setupSocketListeners() {
     });
 
     socket.on('game-over', (data) => {
+        // Clear multiplayer state
+        gameState.multiplayer.isMultiplayer = false;
+        gameState.multiplayer.roomId = null;
+        gameState.multiplayer.playerIndex = null;
+
         if (data.winner === socket.id) {
+            // Player won
             gameState.stats.wins++;
             saveStats();
-            updateLeaderboard(true); // Победа: +2 очка
+            updateLeaderboard(true); // Victory: +2 points
             const victoryMsg = typeof i18n !== 'undefined' ? i18n.t('victoryMsg') : 'Вы разгромили врага!';
             const victoryTitle = typeof i18n !== 'undefined' ? i18n.t('victory') : 'Победа!';
             showResult('🏆', victoryTitle, victoryMsg, 'win');
         } else {
+            // Player lost
             gameState.stats.losses++;
             saveStats();
-            updateLeaderboard(false); // Поражение: -2 очка
+            updateLeaderboard(false); // Defeat: -2 points
             const defeatMsg = typeof i18n !== 'undefined' ? i18n.t('defeatMsg') : 'Враг уничтожил вашу армию!';
             const defeatTitle = typeof i18n !== 'undefined' ? i18n.t('defeat') : 'Поражение';
             showResult('💔', defeatTitle, defeatMsg, 'loss');
@@ -1221,19 +1239,19 @@ function setupSocketListeners() {
     socket.on('global-leaderboard', (data) => {
         updateGlobalLeaderboard(data);
     });
-    
+
     // Setup chat message listener
     socket.on('chat-message', (data) => {
         const chatMessages = document.getElementById('chat-messages');
         if (!chatMessages) return;
-        
+
         const messageEl = document.createElement('div');
         const isOwn = data.playerId === gameState.playerId;
         messageEl.className = `chat-message ${isOwn ? 'own' : 'player'}`;
         messageEl.innerHTML = `<span class="sender">${data.nickname}:</span>${data.message}`;
         chatMessages.appendChild(messageEl);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        
+
         // Keep only last 50 messages
         while (chatMessages.children.length > 50) {
             chatMessages.removeChild(chatMessages.firstChild);
@@ -1250,11 +1268,27 @@ function joinRoom(roomId) {
 }
 
 function findMatch() {
+    // Check if nickname is entered
+    const nickname = document.getElementById('nickname-input').value.trim() || gameState.nickname;
+    if (!nickname) {
+        const errorMsg = typeof i18n !== 'undefined'
+            ? i18n.t('enterNickname') || 'Please enter your nickname first!'
+            : 'Пожалуйста, введите никнейм!';
+        alert(errorMsg);
+        // Go back to menu to enter nickname
+        showScreen('menu');
+        return;
+    }
+
+    // Update nickname in gameState
+    gameState.nickname = nickname;
+    saveStats();
+
     const lobbyStatus = document.getElementById('lobby-status');
     const searchText = typeof i18n !== 'undefined' ? '🔍 Searching for opponent...' : '🔍 Поиск соперника...';
     lobbyStatus.innerHTML = `<p>${searchText}</p>`;
     lobbyStatus.classList.add('searching');
-    socket.emit('find-match', { name: gameState.nickname || 'Player', playerId: gameState.playerId });
+    socket.emit('find-match', { name: nickname, playerId: gameState.playerId });
 }
 
 // Таймер автоготовности
@@ -1397,21 +1431,21 @@ function loadMiniLeaderboard() {
 function showLeaderboard() {
     // Запрашиваем глобальный лидерборд с сервера
     requestFullLeaderboard();
-    
+
     showScreen('leaderboard');
 }
 
 // Запрос полного лидерборда
 function requestFullLeaderboard() {
-    const serverUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
+    const serverUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
         : 'https://numeric-duel-production.up.railway.app';
-    
+
     const tempSocket = io(serverUrl);
     tempSocket.on('connect', () => {
         tempSocket.emit('get-global-leaderboard');
     });
-    
+
     tempSocket.on('global-leaderboard', (data) => {
         displayFullLeaderboard(data);
         tempSocket.disconnect();
@@ -1422,33 +1456,33 @@ function requestFullLeaderboard() {
 function displayFullLeaderboard(leaderboardData) {
     const leaderboardList = document.getElementById('leaderboard-list');
     const playerPosition = document.getElementById('player-position');
-    
+
     if (!leaderboardList) return;
-    
+
     leaderboardList.innerHTML = '';
-    
+
     if (!leaderboardData || leaderboardData.length === 0) {
         const noPlayersText = typeof i18n !== 'undefined' ? 'No players yet' : 'Пока нет игроков в лидерборде';
         leaderboardList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">${noPlayersText}</div>`;
         if (playerPosition) playerPosition.innerHTML = '';
         return;
     }
-    
+
     // Находим позицию текущего игрока
     const currentNickname = gameState.nickname;
     let playerRank = -1;
     let playerData = null;
-    
+
     leaderboardData.forEach((player, index) => {
         if (player.nickname === currentNickname) {
             playerRank = index + 1;
             playerData = player;
         }
-        
+
         const noNameText = typeof i18n !== 'undefined' ? 'Anonymous' : 'Безымянный';
         const row = document.createElement('div');
         row.className = 'leaderboard-row' + (index < 3 ? ' top3' : '');
-        
+
         row.innerHTML = `
             <span class="leaderboard-rank">${index + 1}</span>
             <span class="leaderboard-name">${player.nickname || noNameText}</span>
@@ -1456,19 +1490,19 @@ function displayFullLeaderboard(leaderboardData) {
             <span class="leaderboard-wins">${player.wins}</span>
             <span class="leaderboard-losses">${player.losses}</span>
         `;
-        
+
         leaderboardList.appendChild(row);
     });
-    
+
     // Отображаем позицию игрока
     if (playerPosition) {
         if (playerRank > 0 && playerData) {
-            const positionText = typeof i18n !== 'undefined' 
+            const positionText = typeof i18n !== 'undefined'
                 ? `Your position: #${playerRank} | ${playerData.nickname} | Rating: ${playerData.rating} ⭐ | Wins: ${playerData.wins} | Losses: ${playerData.losses}`
                 : `Ваша позиция: #${playerRank} | ${playerData.nickname} | Рейтинг: ${playerData.rating} ⭐ | Побед: ${playerData.wins} | Поражений: ${playerData.losses}`;
             playerPosition.innerHTML = positionText;
         } else {
-            const notInLBText = typeof i18n !== 'undefined' 
+            const notInLBText = typeof i18n !== 'undefined'
                 ? `You are not in the leaderboard yet. Play some matches to get ranked!`
                 : `Вы пока не в лидерборде. Сыграйте несколько матчей для участия в рейтинге!`;
             playerPosition.innerHTML = notInLBText;
@@ -1507,7 +1541,7 @@ function updateLeaderboard(won = null) {
     }
 
     localStorage.setItem(key, JSON.stringify(stats));
-    
+
     // Note: Mini leaderboard updates automatically via server data
 }
 
@@ -1517,8 +1551,8 @@ function requestGlobalLeaderboard() {
         socket.emit('get-global-leaderboard');
     } else {
         // Подключаемся специально для получения лидерборда
-        const serverUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000' 
+        const serverUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
             : 'https://numeric-duel-production.up.railway.app';
         const tempSocket = io(serverUrl);
         tempSocket.on('connect', () => {
@@ -1537,14 +1571,14 @@ function updateGlobalLeaderboard(serverData) {
         // Show empty state
         const miniLeaderboardList = document.getElementById('mini-leaderboard-list');
         const leaderboardList = document.getElementById('leaderboard-list');
-        
+
         if (miniLeaderboardList) {
             const noPlayersText = typeof i18n !== 'undefined' ? 'No players yet' : 'Пока нет игроков';
             miniLeaderboardList.innerHTML = `<div style="padding: 10px; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">${noPlayersText}</div>`;
         }
         return;
     }
-    
+
     // Update mini leaderboard in menu
     const miniLeaderboardList = document.getElementById('mini-leaderboard-list');
     if (miniLeaderboardList) {
@@ -1560,7 +1594,7 @@ function updateGlobalLeaderboard(serverData) {
         }).join('');
         miniLeaderboardList.innerHTML = html;
     }
-    
+
     // Also update full leaderboard if we're on that screen
     const leaderboardList = document.getElementById('leaderboard-list');
     if (leaderboardList && leaderboardList.innerHTML !== '') {
@@ -1574,16 +1608,16 @@ function checkNicknameAvailability(nickname) {
         updateNicknameStatus('', '');
         return;
     }
-    
-    const serverUrl = window.location.hostname === 'localhost' 
-        ? 'http://localhost:3000' 
+
+    const serverUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
         : 'https://numeric-duel-production.up.railway.app';
-    
+
     const tempSocket = io(serverUrl);
     tempSocket.on('connect', () => {
         tempSocket.emit('check-nickname', { nickname: nickname, playerId: gameState.playerId });
     });
-    
+
     tempSocket.on('nickname-check-result', (data) => {
         if (data.isTaken) {
             const takenText = typeof i18n !== 'undefined' ? '⚠️ Nickname is taken!' : '⚠️ Никнейм занят!';
@@ -1600,7 +1634,7 @@ function checkNicknameAvailability(nickname) {
 function updateNicknameStatus(message, type) {
     const statusEl = document.getElementById('nickname-status');
     if (!statusEl) return;
-    
+
     statusEl.textContent = message;
     statusEl.className = 'nickname-status ' + type;
 }
@@ -1612,19 +1646,19 @@ function setupChatListeners() {
     const chatInput = document.getElementById('chat-input');
     const chatContainer = document.querySelector('.chat-container');
     const chatMessages = document.getElementById('chat-messages');
-    
+
     if (chatToggle && chatContainer) {
         chatToggle.addEventListener('click', () => {
             chatContainer.classList.toggle('collapsed');
             chatToggle.textContent = chatContainer.classList.contains('collapsed') ? '+' : '−';
         });
     }
-    
+
     const sendMessage = () => {
         if (!chatInput || !chatMessages) return;
         const message = chatInput.value.trim();
         if (!message || !gameState.nickname) return;
-        
+
         // Send message to server
         if (socket && socket.connected) {
             socket.emit('chat-message', {
@@ -1637,14 +1671,14 @@ function setupChatListeners() {
             const errorMsg = typeof i18n !== 'undefined' ? 'Not connected to server' : 'Нет подключения к серверу';
             alert(errorMsg);
         }
-        
+
         chatInput.value = '';
     };
-    
+
     if (chatSend) {
         chatSend.addEventListener('click', sendMessage);
     }
-    
+
     if (chatInput) {
         chatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -1658,11 +1692,11 @@ function setupChatListeners() {
 function displayUsernames(yourNickname, enemyNickname) {
     const yourDisplay = document.getElementById('your-nickname-display');
     const enemyDisplay = document.getElementById('enemy-nickname-display');
-    
+
     if (yourDisplay) {
         yourDisplay.textContent = yourNickname || 'Your Troops';
     }
-    
+
     if (enemyDisplay) {
         enemyDisplay.textContent = enemyNickname || 'Enemy';
     }
@@ -1670,18 +1704,16 @@ function displayUsernames(yourNickname, enemyNickname) {
 
 // Surrender function
 function surrender() {
-    const confirmMsg = typeof i18n !== 'undefined' 
+    const confirmMsg = typeof i18n !== 'undefined'
         ? i18n.t('surrenderConfirm')
         : 'Вы уверены, что хотите сдаться?';
-    
+
     if (!confirm(confirmMsg)) return;
-    
+
     // In multiplayer
     if (gameState.multiplayer.isMultiplayer && socket && socket.connected) {
         socket.emit('surrender', { roomId: gameState.multiplayer.roomId });
-        gameState.stats.losses++;
-        saveStats();
-        updateLeaderboard(false); // Defeat: -2 points
+        // Don't update stats here - server will handle it via game-over event
     } else {
         // Single player - just go to menu
         resetGame();
