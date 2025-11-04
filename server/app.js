@@ -265,10 +265,21 @@ io.on('connection', (socket) => {
 
     // Быстрый матч (поиск и подключение к свободной комнате)
     socket.on('find-match', (data) => {
-        // Ищем комнату с одним игроком
+        // Сначала проверяем, не находится ли игрок уже в какой-то комнате ожидания
+        for (let [existingRoomId, existingRoom] of rooms.entries()) {
+            const existingPlayer = existingRoom.players.find(p => p.id === socket.id);
+            if (existingPlayer && existingRoom.gameState === 'waiting') {
+                // Игрок уже ищет матч в этой комнате
+                socket.emit('match-found', { roomId: existingRoomId, playerIndex: existingRoom.players.findIndex(p => p.id === socket.id) });
+                console.log(`Игрок ${socket.id} уже ищет матч в комнате ${existingRoomId}`);
+                return;
+            }
+        }
+
+        // Ищем комнату с одним игроком (но НЕ свою собственную!)
         let foundRoom = null;
         for (let [roomId, room] of rooms.entries()) {
-            if (room.players.length === 1 && room.gameState === 'waiting') {
+            if (room.players.length === 1 && room.gameState === 'waiting' && room.players[0].id !== socket.id) {
                 foundRoom = room;
                 foundRoom.players.push({
                     id: socket.id,

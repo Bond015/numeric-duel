@@ -1268,6 +1268,17 @@ function joinRoom(roomId) {
 }
 
 function findMatch() {
+    // Check if already searching/in a room
+    if (gameState.multiplayer.isMultiplayer && gameState.multiplayer.roomId) {
+        // Already searching or in a match
+        const alreadySearchingMsg = typeof i18n !== 'undefined' && i18n.currentLang === 'ru'
+            ? 'Вы уже ищете противника...'
+            : 'Already searching for opponent...';
+        const lobbyStatus = document.getElementById('lobby-status');
+        lobbyStatus.innerHTML = `<p>${alreadySearchingMsg}</p>`;
+        return;
+    }
+
     // Check if nickname is entered
     const nickname = document.getElementById('nickname-input').value.trim() || gameState.nickname;
     if (!nickname) {
