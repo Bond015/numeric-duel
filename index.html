@@ -254,9 +254,24 @@
 
     <!-- Yandex Games SDK -->
     <script src="https://yandex.ru/games/sdk/v2"></script>
-    <!-- Socket.io: локальная копия для Яндекс Игр (CSP совместимость) -->
-    <!-- В ZIP архиве используется socket.io.min.js, на Vercel тоже нужен этот файл -->
-    <script src="socket.io.min.js"></script>
+    <!-- Socket.io: умная загрузка для совместимости с Яндекс Играми -->
+    <!-- Локальная копия в ZIP (для Яндекс Игр с CSP), CDN для Vercel -->
+    <script>
+        // Проверяем наличие локального файла или Яндекс домен
+        var isYandexGames = window.location.hostname.includes('yandex') ||
+            window.location.hostname.includes('games') ||
+            typeof YaGames !== 'undefined';
+
+        var socketScript = document.createElement('script');
+        if (isYandexGames) {
+            // Яндекс Игры - локальная копия (из ZIP)
+            socketScript.src = 'socket.io.min.js';
+        } else {
+            // Vercel/другие - CDN
+            socketScript.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+        }
+        document.head.appendChild(socketScript);
+    </script>
     <script src="i18n.js"></script>
     <script src="game.js"></script>
 </body>
