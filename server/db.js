@@ -2,14 +2,57 @@ const { Pool } = require('pg');
 
 // Подключение к PostgreSQL
 // Railway автоматически создает переменные окружения для PostgreSQL
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+// Используем DATABASE_URL если доступен, иначе используем отдельные переменные
+let poolConfig;
+
+if (process.env.DATABASE_URL) {
+    // Используем полную строку подключения
+    poolConfig = {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    };
+    console.log('📊 Используем DATABASE_URL для подключения к PostgreSQL');
+} else if (process.env.PGHOST) {
+    // Используем отдельные переменные окружения
+    poolConfig = {
+        host: process.env.PGHOST,
+        port: process.env.PGPORT || 5432,
+        database: process.env.PGDATABASE,
+        user: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+        ssl: process.env.PGHOST !== 'localhost' ? { rejectUnauthorized: false } : false
+    };
+    console.log('📊 Используем отдельные переменные окружения для подключения к PostgreSQL');
+} else {
+    // Если нет переменных окружения, выдаем понятную ошибку
+    console.error('❌ ОШИБКА: Не найдены переменные окружения для PostgreSQL!');
+    console.error('❌ Ожидаются: DATABASE_URL или PGHOST, PGDATABASE, PGUSER, PGPASSWORD');
+    console.error('❌ Проверьте настройки Railway:');
+    console.error('   1. Убедитесь, что сервис Postgres активен');
+    console.error('   2. Убедитесь, что сервис numeric-duel связан с Postgres');
+    console.error('   3. Проверьте переменные окружения в настройках сервиса numeric-duel');
+    // Создаем пустой pool, чтобы не крашить приложение сразу
+    poolConfig = {
+        connectionString: 'postgresql://localhost/nonexistent',
+        ssl: false
+    };
+}
+
+const pool = new Pool(poolConfig);
+
+// Обработка ошибок подключения
+pool.on('error', (err) => {
+    console.error('❌ Неожиданная ошибка на клиенте PostgreSQL:', err);
 });
 
 // Инициализация базы данных - создание таблицы если её нет
 async function initDatabase() {
     try {
+        // Проверяем наличие переменных окружения перед попыткой подключения
+        if (!process.env.DATABASE_URL && !process.env.PGHOST) {
+            throw new Error('Переменные окружения для PostgreSQL не найдены. Проверьте настройки Railway.');
+        }
+        
         const query = `
             CREATE TABLE IF NOT EXISTS leaderboard (
                 player_id VARCHAR(255) PRIMARY KEY,
@@ -27,7 +70,11 @@ async function initDatabase() {
         await pool.query(query);
         console.log('✅ Database initialized successfully');
     } catch (error) {
-        console.error('❌ Error initializing database:', error);
+        console.error('❌ Error initializing database:', error.message);
+        console.error('❌ Проверьте:');
+        console.error('   1. Сервис Postgres активен в Railway');
+        console.error('   2. Переменные окружения установлены (DATABASE_URL или PGHOST, PGDATABASE, etc.)');
+        console.error('   3. Сервис numeric-duel имеет доступ к переменным окружения Postgres');
         throw error;
     }
 }
