@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const db = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,9 +16,6 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
-
-// Leaderboard storage file
-const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
 
 // Middleware
 app.use(cors());
@@ -51,32 +49,18 @@ let globalUnitIdCounter = 0;
 // Глобальный лидерборд (в памяти, для демо)
 const globalLeaderboard = new Map();
 
-// Load leaderboard from file
-function loadLeaderboard() {
+// Загрузка лидерборда из PostgreSQL (асинхронная)
+async function loadLeaderboard() {
     try {
-        if (fs.existsSync(LEADERBOARD_FILE)) {
-            const data = fs.readFileSync(LEADERBOARD_FILE, 'utf8');
-            const players = JSON.parse(data);
-            players.forEach(player => {
-                globalLeaderboard.set(player.playerId, player);
-            });
-            console.log(`✅ Loaded ${players.length} players from leaderboard`);
-        } else {
-            console.log('📝 No existing leaderboard, starting fresh');
-        }
+        const playersMap = await db.loadLeaderboard();
+        // Обновляем кеш в памяти
+        globalLeaderboard.clear();
+        playersMap.forEach((player, playerId) => {
+            globalLeaderboard.set(playerId, player);
+        });
+        console.log(`✅ Loaded ${globalLeaderboard.size} players from PostgreSQL`);
     } catch (error) {
-        console.error('❌ Error loading leaderboard:', error);
-    }
-}
-
-// Save leaderboard to file
-function saveLeaderboard() {
-    try {
-        const players = Array.from(globalLeaderboard.values());
-        fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(players, null, 2));
-        console.log(`💾 Saved ${players.length} players to leaderboard`);
-    } catch (error) {
-        console.error('❌ Error saving leaderboard:', error);
+        console.error('❌ Error loading leaderboard from PostgreSQL:', error);
     }
 }
 
@@ -395,10 +379,27 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Запрос глобального лидерборда
-    socket.on('get-global-leaderboard', () => {
-        const topPlayers = getTopPlayers(10);
-        socket.emit('global-leaderboard', topPlayers);
+    // Запрос глобального лидерборда (асинхронный)
+    socket.on('get-global-leaderboard', async (data) => {
+        try {
+            // Если передан limit, используем его, иначе по умолчанию 10
+            // Для полного лидерборда можно передать limit: 0 или очень большое число
+            const limit = (data && data.limit) ? data.limit : 10;
+
+            let topPlayers;
+            if (limit === 0 || limit > 1000) {
+                // Полный лидерборд - получаем всех игроков
+                topPlayers = await db.getAllPlayers();
+            } else {
+                // Топ игроков
+                topPlayers = await getTopPlayers(limit);
+            }
+
+            socket.emit('global-leaderboard', topPlayers);
+        } catch (error) {
+            console.error('❌ Error getting leaderboard:', error);
+            socket.emit('global-leaderboard', []);
+        }
     });
 
     // Глобальный чат
@@ -408,7 +409,7 @@ io.on('connection', (socket) => {
     });
 
     // Сдача
-    socket.on('surrender', (data) => {
+    socket.on('surrender', async (data) => {
         const room = rooms.get(data.roomId);
         if (!room) return;
 
@@ -419,9 +420,9 @@ io.on('connection', (socket) => {
         const winner = room.players.find(p => p.id !== socket.id);
 
         if (winner) {
-            // Обновить лидерборд
-            updateGlobalLeaderboard(winner.playerId, winner.name, true);
-            updateGlobalLeaderboard(surrenderingPlayer.playerId, surrenderingPlayer.name, false);
+            // Обновить лидерборд (асинхронно)
+            await updateGlobalLeaderboard(winner.playerId, winner.name, true);
+            await updateGlobalLeaderboard(surrenderingPlayer.playerId, surrenderingPlayer.name, false);
 
             // Отправить событие окончания игры ОБОИМ игрокам (важно: до удаления комнаты!)
             io.to(data.roomId).emit('game-over', {
@@ -499,7 +500,7 @@ function showBattlePreparation(roomId, room) {
     }, 2000);
 }
 
-function performBattle(roomId, room) {
+async function performBattle(roomId, room) {
     const player1 = room.players[0];
     const player2 = room.players[1];
 
@@ -542,16 +543,16 @@ function performBattle(roomId, room) {
     // Проверка победы
     if (player1.numbers.length === 0) {
         room.gameState = 'finished';
-        updateGlobalLeaderboard(player2.playerId, player2.name, true);
-        updateGlobalLeaderboard(player1.playerId, player1.name, false);
+        await updateGlobalLeaderboard(player2.playerId, player2.name, true);
+        await updateGlobalLeaderboard(player1.playerId, player1.name, false);
         io.to(roomId).emit('game-over', { winner: player2.id, winnerName: player2.name });
         return;
     }
 
     if (player2.numbers.length === 0) {
         room.gameState = 'finished';
-        updateGlobalLeaderboard(player1.playerId, player1.name, true);
-        updateGlobalLeaderboard(player2.playerId, player2.name, false);
+        await updateGlobalLeaderboard(player1.playerId, player1.name, true);
+        await updateGlobalLeaderboard(player2.playerId, player2.name, false);
         io.to(roomId).emit('game-over', { winner: player1.id, winnerName: player1.name });
         return;
     }
@@ -655,8 +656,8 @@ function generateRoomId() {
     return Math.random().toString(36).substr(2, 9);
 }
 
-// Обновление глобального лидерборда
-function updateGlobalLeaderboard(playerId, nickname, won) {
+// Обновление глобального лидерборда (асинхронная, сохраняет в PostgreSQL и обновляет кеш)
+async function updateGlobalLeaderboard(playerId, nickname, won) {
     if (!playerId || !nickname) return;
 
     const player = globalLeaderboard.get(playerId) || { playerId, nickname, wins: 0, losses: 0, rating: 0 };
@@ -672,34 +673,62 @@ function updateGlobalLeaderboard(playerId, nickname, won) {
     // Обновляем никнейм на случай изменения
     player.nickname = nickname;
 
+    // Обновляем кеш в памяти
     globalLeaderboard.set(playerId, player);
 
-    // Save to file after each update
-    saveLeaderboard();
+    // Сохраняем в PostgreSQL (асинхронно, не блокируем выполнение)
+    try {
+        await db.savePlayer(player);
+    } catch (error) {
+        console.error('❌ Error saving player to PostgreSQL:', error);
+    }
 }
 
 // Получить топ игроков
-function getTopPlayers(limit = 10) {
-    const players = Array.from(globalLeaderboard.values());
-
-    players.sort((a, b) => {
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        const aWR = (a.wins + a.losses) > 0 ? a.wins / (a.wins + a.losses) : 0;
-        const bWR = (b.wins + b.losses) > 0 ? b.wins / (b.wins + b.losses) : 0;
-        if (bWR !== aWR) return bWR - aWR;
-        return b.wins - a.wins;
-    });
-
-    return players.slice(0, limit);
+// Получение топ игроков (асинхронная, берет данные из PostgreSQL)
+async function getTopPlayers(limit = 10) {
+    try {
+        // Получаем топ игроков напрямую из БД (более актуальные данные)
+        return await db.getTopPlayers(limit);
+    } catch (error) {
+        console.error('❌ Error getting top players from PostgreSQL:', error);
+        // Fallback: возвращаем из кеша, если БД недоступна
+        const players = Array.from(globalLeaderboard.values());
+        players.sort((a, b) => {
+            if (b.rating !== a.rating) return b.rating - a.rating;
+            const aWR = (a.wins + a.losses) > 0 ? a.wins / (a.wins + a.losses) : 0;
+            const bWR = (b.wins + b.losses) > 0 ? b.wins / (b.wins + b.losses) : 0;
+            if (bWR !== aWR) return bWR - aWR;
+            return b.wins - a.wins;
+        });
+        return players.slice(0, limit);
+    }
 }
 
 // Запуск сервера
-loadLeaderboard(); // Load leaderboard on startup
+// Инициализация базы данных и загрузка лидерборда при старте
+async function startServer() {
+    try {
+        // Инициализируем базу данных (создаем таблицу если её нет)
+        await db.initDatabase();
 
-server.listen(PORT, () => {
-    console.log(`🎮 Числовая Дуэль - Сервер запущен на порту ${PORT}`);
-    console.log(`🌐 Откройте http://localhost:${PORT} в браузере`);
-});
+        // Загружаем лидерборд из PostgreSQL в память
+        await loadLeaderboard();
+
+        // Запускаем сервер
+        server.listen(PORT, () => {
+            console.log(`🎮 Числовая Дуэль - Сервер запущен на порту ${PORT}`);
+            console.log(`🌐 Откройте http://localhost:${PORT} в браузере`);
+            console.log(`📊 PostgreSQL подключен, лидерборд загружен`);
+        });
+    } catch (error) {
+        console.error('❌ Ошибка при запуске сервера:', error);
+        process.exit(1);
+    }
+}
+
+// Запускаем сервер
+startServer();
 
 // Обработка ошибок
 process.on('unhandledRejection', (error) => {
