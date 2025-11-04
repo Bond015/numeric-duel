@@ -18,7 +18,7 @@
                     <button class="lang-btn" data-lang="en">EN</button>
                     <button class="lang-btn" data-lang="ru">RU</button>
                 </div>
-                
+
                 <h1 class="game-title">⚔️ NUMERIC DUEL</h1>
                 <p class="game-subtitle">To the last soldier!</p>
 
@@ -52,7 +52,8 @@
                         <div class="chat-message system">Welcome to Numeric Duel! Chat with other players.</div>
                     </div>
                     <div class="chat-input-container">
-                        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..." maxlength="200">
+                        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..."
+                            maxlength="200">
                         <button class="btn btn-primary btn-send" id="chat-send">Send</button>
                     </div>
                 </div>
@@ -177,11 +178,11 @@
         <div id="leaderboard-screen" class="screen">
             <div class="menu-content">
                 <h1 class="game-title">🏆 LEADERBOARD</h1>
-                
+
                 <div id="player-position" class="player-position">
                     <!-- Player's position will be added via JS -->
                 </div>
-                
+
                 <div id="leaderboard-content" class="leaderboard-content">
                     <div class="leaderboard-header">
                         <span class="rank-header">#</span>
@@ -251,6 +252,8 @@
         </div>
     </div>
 
+    <!-- Yandex Games SDK -->
+    <script src="https://yandex.ru/games/sdk/v2"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="i18n.js"></script>
     <script src="game.js"></script>

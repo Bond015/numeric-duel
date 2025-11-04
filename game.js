@@ -52,6 +52,10 @@ function generatePlayerId() {
     return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
+// Яндекс SDK (глобальная переменная)
+let yaGamesSDK = null;
+let isYandexGames = false;
+
 // Инициализация игры
 function initGame() {
     loadStats();
@@ -64,6 +68,36 @@ function initGame() {
 
     // Initialize global chat connection
     initGlobalChat();
+}
+
+// Инициализация Яндекс SDK
+function initYandexSDK() {
+    // Проверяем, запущена ли игра на Яндекс Играх
+    if (typeof YaGames !== 'undefined') {
+        isYandexGames = true;
+        YaGames.init()
+            .then(ysdk => {
+                yaGamesSDK = ysdk;
+                console.log('✅ Яндекс SDK инициализирован');
+
+                // Уведомляем SDK, что игра готова к загрузке
+                if (ysdk.features && ysdk.features.LoadingAPI) {
+                    ysdk.features.LoadingAPI.ready();
+                }
+
+                // Инициализация игры после готовности SDK
+                initGame();
+            })
+            .catch(err => {
+                console.warn('⚠️ Ошибка инициализации Яндекс SDK:', err);
+                // Если SDK не загрузился, запускаем игру без него
+                initGame();
+            });
+    } else {
+        // Игра не на Яндекс Играх - запускаем обычную инициализацию
+        console.log('ℹ️ Игра запущена вне Яндекс Игр');
+        initGame();
+    }
 }
 
 // Initialize global chat connection
@@ -83,10 +117,37 @@ function initGlobalChat() {
 
 // Загрузка статистики
 function loadStats() {
-    // Загружаем никнейм
-    const nicknameInput = document.getElementById('nickname-input');
-    if (nicknameInput && gameState.nickname) {
-        nicknameInput.value = gameState.nickname;
+    // Если игра на Яндекс Играх и SDK доступен, пытаемся получить данные игрока
+    if (isYandexGames && yaGamesSDK) {
+        // Пытаемся получить никнейм из Яндекс ID
+        yaGamesSDK.getPlayer()
+            .then(player => {
+                if (player && player.getName && player.getName()) {
+                    const yandexNickname = player.getName();
+                    if (yandexNickname) {
+                        gameState.nickname = yandexNickname;
+                        const nicknameInput = document.getElementById('nickname-input');
+                        if (nicknameInput) {
+                            nicknameInput.value = yandexNickname;
+                            nicknameInput.disabled = true; // Отключаем редактирование, так как берем из Яндекс ID
+                        }
+                    }
+                }
+            })
+            .catch(err => {
+                console.log('Не удалось получить данные игрока из Яндекс:', err);
+                // Продолжаем с локальным никнеймом
+                const nicknameInput = document.getElementById('nickname-input');
+                if (nicknameInput && gameState.nickname) {
+                    nicknameInput.value = gameState.nickname;
+                }
+            });
+    } else {
+        // Обычная загрузка никнейма из localStorage
+        const nicknameInput = document.getElementById('nickname-input');
+        if (nicknameInput && gameState.nickname) {
+            nicknameInput.value = gameState.nickname;
+        }
     }
 
     // Запрашиваем глобальный лидерборд с сервера (обновит и мини и полный)
@@ -1732,4 +1793,19 @@ function surrender() {
 }
 
 // Запуск игры при загрузке страницы
-document.addEventListener('DOMContentLoaded', initGame);
+// Сначала пытаемся инициализировать Яндекс SDK (если доступен), затем игру
+document.addEventListener('DOMContentLoaded', function () {
+    // Небольшая задержка для загрузки Яндекс SDK
+    if (typeof YaGames !== 'undefined') {
+        initYandexSDK();
+    } else {
+        // Даем время SDK загрузиться, если он подключен
+        setTimeout(() => {
+            if (typeof YaGames !== 'undefined') {
+                initYandexSDK();
+            } else {
+                initGame();
+            }
+        }, 100);
+    }
+});

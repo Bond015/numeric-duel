@@ -15,6 +15,12 @@
 - **Combat**: Dice determine damage, type advantages modify results
 - **Victory**: Destroy all enemy troops!
 
+## 🎮 Play Online
+
+🎯 **Play on Itch.io:** [Your Itch.io Game Link] - *Add your Itch.io game URL here*
+
+🌐 **Direct Play:** [Vercel Deployment] - *Add your Vercel URL here*
+
 ## 🚀 Запуск
 
 ```bash
@@ -45,10 +51,11 @@ npm start
 - [x] Multiplayer: Online matches
 - [x] Rating system and leaderboard
 - [x] Multi-language support (EN/RU)
+- [x] Publishing: Itch.io ✅
 - [ ] Polish: Sounds, achievements
-- [ ] Publishing: Itch.io, Kongregate etc.
+- [ ] Additional platforms: Kongregate, Newgrounds, etc.
 
-## 📚 Documentation
+## �� Documentation
 
 - `README_NEW_GAMEPLAY.md` - Gameplay mechanics
 - `DEPLOYMENT.md` - Publishing guide
