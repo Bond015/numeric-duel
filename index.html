@@ -254,8 +254,20 @@
 
     <!-- Yandex Games SDK -->
     <script src="https://yandex.ru/games/sdk/v2"></script>
-    <!-- Socket.io: локальная копия для Яндекс Игр (CSP совместимость) -->
-    <script src="socket.io.min.js"></script>
+    <!-- Socket.io: умная загрузка - локальная копия для Яндекс Игр, CDN для других -->
+    <script>
+        (function () {
+            // Проверяем, запущена ли игра на Яндекс Играх
+            var isYandexGames = typeof YaGames !== 'undefined' ||
+                window.location.hostname.includes('yandex') ||
+                window.location.hostname.includes('games');
+
+            var socketScript = document.createElement('script');
+            socketScript.src = isYandexGames ? 'socket.io.min.js' : 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+            socketScript.async = false; // Важно загружать синхронно перед game.js
+            document.head.appendChild(socketScript);
+        })();
+    </script>
     <script src="i18n.js"></script>
     <script src="game.js"></script>
 </body>
