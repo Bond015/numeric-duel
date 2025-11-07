@@ -18,6 +18,8 @@ const TYPE_DISTRIBUTION = Array(20).fill(0).map((_, i) => {
     return pattern[i % 3];
 });
 
+const MIN_NICKNAME_LENGTH = 3;
+
 // Socket.io подключение
 let socket = null;
 let socketListenersSetup = false;
@@ -422,11 +424,13 @@ function setupEventListeners() {
             clearTimeout(nicknameCheckTimeout);
             const nickname = nicknameInput.value.trim();
 
-            if (nickname.length < 3) {
+            if (nickname.length < MIN_NICKNAME_LENGTH) {
                 const tooShortMsg = getText('nicknameTooShort', '⚠️ Никнейм слишком короткий');
                 updateNicknameStatus(tooShortMsg, 'error');
                 return;
             }
+
+            updateNicknameStatus(getText('checkingNickname', '⏳ Проверяем ник...'), 'info');
 
             nicknameCheckTimeout = setTimeout(() => {
                 checkNicknameAvailability(nickname);
@@ -1877,7 +1881,7 @@ function updateGlobalLeaderboard(serverData) {
 
 // Проверка доступности никнейма
 function checkNicknameAvailability(nickname) {
-    if (!nickname || nickname.length < 3) {
+    if (!nickname || nickname.length < MIN_NICKNAME_LENGTH) {
         updateNicknameStatus('', '');
         return;
     }
@@ -1886,12 +1890,21 @@ function checkNicknameAvailability(nickname) {
         ? 'http://localhost:3000'
         : 'https://numeric-duel-production.up.railway.app';
 
-    const tempSocket = io(serverUrl);
+    const tempSocket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
+        forceNew: true,
+        reconnectionAttempts: 0,
+        timeout: 3000
+    });
+
+    let resolved = false;
+
     tempSocket.on('connect', () => {
         tempSocket.emit('check-nickname', { nickname: nickname, playerId: gameState.playerId });
     });
 
     tempSocket.on('nickname-check-result', (data) => {
+        resolved = true;
         if (data.isTaken) {
             const takenText = getText('nicknameTaken', '⚠️ Ник уже занят!');
             updateNicknameStatus(takenText, 'error');
@@ -1901,6 +1914,20 @@ function checkNicknameAvailability(nickname) {
         }
         tempSocket.disconnect();
     });
+
+    const handleAvailabilityError = () => {
+        if (resolved) return;
+        resolved = true;
+        const failMsg = getText('nicknameCheckFailed', '⚠️ Не удалось проверить ник. Попробуйте позже.');
+        updateNicknameStatus(failMsg, 'error');
+        tempSocket.disconnect();
+    };
+
+    tempSocket.on('connect_error', handleAvailabilityError);
+    tempSocket.on('connect_timeout', handleAvailabilityError);
+    tempSocket.on('error', handleAvailabilityError);
+
+    setTimeout(handleAvailabilityError, 4000);
 }
 
 // Обновление статуса никнейма

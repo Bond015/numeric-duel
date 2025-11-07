@@ -849,6 +849,10 @@ body::before {
     color: var(--success-color);
 }
 
+.nickname-status.info {
+    color: var(--warning-color);
+}
+
 .nickname-status.error {
     color: var(--danger-color);
 }
