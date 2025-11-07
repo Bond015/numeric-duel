@@ -25,6 +25,262 @@ let socketListenersSetup = false;
 // Таймер готовности для мультиплеера
 let readyTimer = null;
 
+// Yandex SDK state
+let yaGamesSDK = null;
+let sdkInitInProgress = false;
+let sdkReady = false;
+let gameInitialized = false;
+let gameLogicReady = false;
+let gameReadyReported = false;
+
+const INTERACTIVE_SELECTOR = 'input, textarea, [contenteditable="true"], .allow-selection';
+
+function isInteractiveTarget(target) {
+    if (!target) return false;
+    if (typeof target.closest === 'function') {
+        return Boolean(target.closest(INTERACTIVE_SELECTOR));
+    }
+    return false;
+}
+
+function preventDefaultIfNonInteractive(event) {
+    if (!isInteractiveTarget(event.target)) {
+        event.preventDefault();
+    }
+}
+
+document.addEventListener('contextmenu', preventDefaultIfNonInteractive);
+document.addEventListener('selectstart', preventDefaultIfNonInteractive);
+document.addEventListener('dragstart', preventDefaultIfNonInteractive);
+
+// UI helpers for system dialogs
+const systemDialog = {
+    initialized: false,
+    modal: null,
+    title: null,
+    message: null,
+    confirmBtn: null,
+    cancelBtn: null
+};
+
+function getText(key, fallback) {
+    if (typeof i18n !== 'undefined' && typeof i18n.t === 'function') {
+        const value = i18n.t(key);
+        if (value && value !== key) {
+            return value;
+        }
+    }
+    return fallback;
+}
+
+function ensureSystemDialog() {
+    if (systemDialog.initialized) return;
+    systemDialog.modal = document.getElementById('system-modal');
+    systemDialog.title = document.getElementById('system-modal-title');
+    systemDialog.message = document.getElementById('system-modal-message');
+    systemDialog.confirmBtn = document.getElementById('system-modal-confirm');
+    systemDialog.cancelBtn = document.getElementById('system-modal-cancel');
+    systemDialog.initialized = Boolean(
+        systemDialog.modal &&
+        systemDialog.title &&
+        systemDialog.message &&
+        systemDialog.confirmBtn &&
+        systemDialog.cancelBtn
+    );
+}
+
+function getDefaultDialogTitle(type) {
+    switch (type) {
+        case 'error':
+            return getText('errorTitle', 'Ошибка');
+        case 'warning':
+            return getText('warningTitle', 'Внимание');
+        case 'confirm':
+            return getText('confirmTitle', 'Подтвердите действие');
+        default:
+            return getText('infoTitle', 'Сообщение');
+    }
+}
+
+function showSystemDialog(options = {}) {
+    ensureSystemDialog();
+
+    const {
+        title,
+        message,
+        confirmText,
+        cancelText,
+        type,
+        dismissible = true
+    } = options;
+
+    if (!systemDialog.initialized) {
+        if (cancelText) {
+            const result = window.confirm ? window.confirm(message) : false;
+            return Promise.resolve(result);
+        }
+        window.alert && window.alert(message);
+        return Promise.resolve(true);
+    }
+
+    return new Promise((resolve) => {
+        const { modal, title: titleEl, message: messageEl, confirmBtn, cancelBtn } = systemDialog;
+
+        titleEl.textContent = title || getDefaultDialogTitle(type);
+        messageEl.textContent = message !== undefined && message !== null ? String(message) : '';
+
+        const confirmLabel = confirmText || (cancelText ? getText('yesBtn', 'Да') : getText('okBtn', 'OK'));
+        confirmBtn.textContent = confirmLabel;
+
+        let cleanupCalled = false;
+        const cleanup = (result) => {
+            if (cleanupCalled) return;
+            cleanupCalled = true;
+            modal.classList.remove('active');
+            document.removeEventListener('keydown', escHandler);
+            modal.removeEventListener('click', outsideHandler);
+            confirmBtn.removeEventListener('click', confirmHandler);
+            if (cancelText) {
+                cancelBtn.removeEventListener('click', cancelHandler);
+            }
+            resolve(result);
+        };
+
+        const escHandler = (event) => {
+            if (event.key === 'Escape') {
+                if (cancelText) {
+                    cleanup(false);
+                } else if (dismissible) {
+                    cleanup(true);
+                }
+            }
+        };
+
+        const outsideHandler = (event) => {
+            if (event.target === modal && dismissible) {
+                if (cancelText) {
+                    cleanup(false);
+                } else {
+                    cleanup(true);
+                }
+            }
+        };
+
+        document.addEventListener('keydown', escHandler);
+        modal.addEventListener('click', outsideHandler);
+
+        const confirmHandler = () => cleanup(true);
+        confirmBtn.addEventListener('click', confirmHandler);
+
+        let cancelHandler = null;
+        if (cancelText) {
+            cancelBtn.style.display = 'inline-flex';
+            cancelBtn.textContent = cancelText || getText('noBtn', 'Нет');
+            cancelHandler = () => cleanup(false);
+            cancelBtn.addEventListener('click', cancelHandler);
+        } else {
+            cancelBtn.style.display = 'none';
+        }
+
+        modal.classList.add('active');
+        setTimeout(() => {
+            if (typeof confirmBtn.focus === 'function') {
+                confirmBtn.focus({ preventScroll: true });
+            }
+        }, 0);
+    });
+}
+
+function showInfoDialog(message, title) {
+    return showSystemDialog({
+        message,
+        title: title || getDefaultDialogTitle('info'),
+        confirmText: getText('okBtn', 'OK'),
+        type: 'info'
+    });
+}
+
+function showErrorDialog(message) {
+    return showSystemDialog({
+        message,
+        title: getDefaultDialogTitle('error'),
+        confirmText: getText('okBtn', 'OK'),
+        type: 'error'
+    });
+}
+
+function showConfirmDialog(message, title) {
+    return showSystemDialog({
+        message,
+        title: title || getDefaultDialogTitle('confirm'),
+        confirmText: getText('yesBtn', 'Да'),
+        cancelText: getText('noBtn', 'Нет'),
+        type: 'confirm'
+    });
+}
+
+function tryReportGameReady() {
+    if (gameReadyReported) return;
+    if (!gameLogicReady) return;
+
+    if (!yaGamesSDK) {
+        return;
+    }
+
+    try {
+        if (yaGamesSDK.features) {
+            if (yaGamesSDK.features.GameReadyAPI && typeof yaGamesSDK.features.GameReadyAPI.gameReady === 'function') {
+                yaGamesSDK.features.GameReadyAPI.gameReady();
+            }
+            if (yaGamesSDK.features.LoadingAPI && typeof yaGamesSDK.features.LoadingAPI.ready === 'function') {
+                yaGamesSDK.features.LoadingAPI.ready();
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Yandex GameReady notification failed:', error);
+    }
+
+    gameReadyReported = true;
+}
+
+function autoDetectLanguage(ysdk) {
+    if (!ysdk || typeof i18n === 'undefined') return;
+    const detected = ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang;
+    const stored = localStorage.getItem('gameLanguage');
+    if (!stored && detected && i18n.translations && i18n.translations[detected]) {
+        i18n.setLanguage(detected);
+    }
+}
+
+function startApplication() {
+    if (gameInitialized) return;
+    gameInitialized = true;
+    initGame();
+    gameLogicReady = true;
+    tryReportGameReady();
+}
+
+async function initYandexSDK() {
+    if (sdkInitInProgress || typeof YaGames === 'undefined' || typeof YaGames.init !== 'function') {
+        startApplication();
+        return;
+    }
+
+    sdkInitInProgress = true;
+    try {
+        const ysdk = await YaGames.init();
+        yaGamesSDK = ysdk;
+        console.log('✅ Yandex SDK initialized');
+        autoDetectLanguage(ysdk);
+        sdkReady = true;
+        tryReportGameReady();
+        startApplication();
+    } catch (error) {
+        console.warn('⚠️ Yandex SDK initialization failed:', error);
+        startApplication();
+    }
+}
+
 // Игровое состояние
 let gameState = {
     screen: 'menu',
@@ -52,52 +308,22 @@ function generatePlayerId() {
     return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-// Яндекс SDK (глобальная переменная)
-let yaGamesSDK = null;
-let isYandexGames = false;
-
 // Инициализация игры
 function initGame() {
+    ensureSystemDialog();
     loadStats();
     setupEventListeners();
 
     // Initialize localization
     if (typeof i18n !== 'undefined') {
+        if (!i18n.currentLang) {
+            i18n.currentLang = i18n.defaultLang || 'ru';
+        }
         i18n.updateAllTexts();
     }
 
     // Initialize global chat connection
     initGlobalChat();
-}
-
-// Инициализация Яндекс SDK
-function initYandexSDK() {
-    // Проверяем, запущена ли игра на Яндекс Играх
-    if (typeof YaGames !== 'undefined') {
-        isYandexGames = true;
-        YaGames.init()
-            .then(ysdk => {
-                yaGamesSDK = ysdk;
-                console.log('✅ Яндекс SDK инициализирован');
-
-                // Уведомляем SDK, что игра готова к загрузке
-                if (ysdk.features && ysdk.features.LoadingAPI) {
-                    ysdk.features.LoadingAPI.ready();
-                }
-
-                // Инициализация игры после готовности SDK
-                initGame();
-            })
-            .catch(err => {
-                console.warn('⚠️ Ошибка инициализации Яндекс SDK:', err);
-                // Если SDK не загрузился, запускаем игру без него
-                initGame();
-            });
-    } else {
-        // Игра не на Яндекс Играх - запускаем обычную инициализацию
-        console.log('ℹ️ Игра запущена вне Яндекс Игр');
-        initGame();
-    }
 }
 
 // Initialize global chat connection
@@ -117,37 +343,10 @@ function initGlobalChat() {
 
 // Загрузка статистики
 function loadStats() {
-    // Если игра на Яндекс Играх и SDK доступен, пытаемся получить данные игрока
-    if (isYandexGames && yaGamesSDK) {
-        // Пытаемся получить никнейм из Яндекс ID
-        yaGamesSDK.getPlayer()
-            .then(player => {
-                if (player && player.getName && player.getName()) {
-                    const yandexNickname = player.getName();
-                    if (yandexNickname) {
-                        gameState.nickname = yandexNickname;
-                        const nicknameInput = document.getElementById('nickname-input');
-                        if (nicknameInput) {
-                            nicknameInput.value = yandexNickname;
-                            nicknameInput.disabled = true; // Отключаем редактирование, так как берем из Яндекс ID
-                        }
-                    }
-                }
-            })
-            .catch(err => {
-                console.log('Не удалось получить данные игрока из Яндекс:', err);
-                // Продолжаем с локальным никнеймом
-                const nicknameInput = document.getElementById('nickname-input');
-                if (nicknameInput && gameState.nickname) {
-                    nicknameInput.value = gameState.nickname;
-                }
-            });
-    } else {
-        // Обычная загрузка никнейма из localStorage
-        const nicknameInput = document.getElementById('nickname-input');
-        if (nicknameInput && gameState.nickname) {
-            nicknameInput.value = gameState.nickname;
-        }
+    // Загружаем никнейм
+    const nicknameInput = document.getElementById('nickname-input');
+    if (nicknameInput && gameState.nickname) {
+        nicknameInput.value = gameState.nickname;
     }
 
     // Запрашиваем глобальный лидерборд с сервера (обновит и мини и полный)
@@ -207,7 +406,7 @@ function setupEventListeners() {
 
     // Set initial active language button
     if (typeof i18n !== 'undefined') {
-        const currentLang = i18n.currentLang || 'en';
+        const currentLang = i18n.currentLang || i18n.defaultLang || 'ru';
         langButtons.forEach(btn => {
             if (btn.dataset.lang === currentLang) {
                 btn.classList.add('active');
@@ -224,7 +423,8 @@ function setupEventListeners() {
             const nickname = nicknameInput.value.trim();
 
             if (nickname.length < 3) {
-                updateNicknameStatus('nickname too short', 'error');
+                const tooShortMsg = getText('nicknameTooShort', '⚠️ Никнейм слишком короткий');
+                updateNicknameStatus(tooShortMsg, 'error');
                 return;
             }
 
@@ -1084,7 +1284,7 @@ function initMultiplayer() {
         const errorMsg = typeof i18n !== 'undefined'
             ? i18n.t('enterNickname') || 'Please enter your nickname first!'
             : 'Пожалуйста, введите никнейм!';
-        alert(errorMsg);
+        showInfoDialog(errorMsg, getDefaultDialogTitle('warning'));
         return;
     }
 
@@ -1146,7 +1346,7 @@ function setupSocketListeners() {
         document.getElementById('room-info').style.display = 'block';
         const lobbyStatus = document.getElementById('lobby-status');
         lobbyStatus.classList.remove('searching');
-        lobbyStatus.innerHTML = '<p>Connected to room!</p>';
+        lobbyStatus.innerHTML = `<p>${getText('connectedToRoom', 'Комната найдена! Подготовьтесь к бою')}</p>`;
     });
 
     socket.on('match-found', (data) => {
@@ -1157,10 +1357,10 @@ function setupSocketListeners() {
         const lobbyStatus = document.getElementById('lobby-status');
         if (data.playerIndex === 0) {
             lobbyStatus.classList.add('searching');
-            lobbyStatus.innerHTML = '<p>⏳ Searching for opponent...</p>';
+            lobbyStatus.innerHTML = `<p>${getText('searchingOpponent', '🔍 Поиск соперника...')}</p>`;
         } else {
             lobbyStatus.classList.remove('searching');
-            lobbyStatus.innerHTML = '<p>✅ Opponent found! Starting game...</p>';
+            lobbyStatus.innerHTML = `<p>${getText('opponentFound', '✅ Противник найден! Начинаем бой...')}</p>`;
         }
     });
 
@@ -1287,12 +1487,12 @@ function setupSocketListeners() {
 
     socket.on('error', (error) => {
         console.error('Ошибка:', error);
-        alert(error);
+        showErrorDialog(error);
     });
 
     socket.on('player-disconnected', () => {
-        const msg = typeof i18n !== 'undefined' ? 'Opponent disconnected' : 'Соперник отключился';
-        alert(msg);
+        const msg = getText('opponentDisconnected', 'Соперник отключился');
+        showInfoDialog(msg);
         backToMenu();
     });
 
@@ -1321,20 +1521,20 @@ function setupSocketListeners() {
 }
 
 function createRoom() {
-    socket.emit('create-room', { name: gameState.nickname || 'Player', playerId: gameState.playerId });
+    const defaultName = getText('defaultPlayerName', 'Игрок');
+    socket.emit('create-room', { name: gameState.nickname || defaultName, playerId: gameState.playerId });
 }
 
 function joinRoom(roomId) {
-    socket.emit('join-room', { roomId: roomId, name: gameState.nickname || 'Player', playerId: gameState.playerId });
+    const defaultName = getText('defaultPlayerName', 'Игрок');
+    socket.emit('join-room', { roomId: roomId, name: gameState.nickname || defaultName, playerId: gameState.playerId });
 }
 
 function findMatch() {
     // Check if already searching/in a room
     if (gameState.multiplayer.isMultiplayer && gameState.multiplayer.roomId) {
         // Already searching or in a match
-        const alreadySearchingMsg = typeof i18n !== 'undefined' && i18n.currentLang === 'ru'
-            ? 'Вы уже ищете противника...'
-            : 'Already searching for opponent...';
+        const alreadySearchingMsg = getText('alreadySearching', 'Вы уже ищете противника...');
         const lobbyStatus = document.getElementById('lobby-status');
         lobbyStatus.innerHTML = `<p>${alreadySearchingMsg}</p>`;
         return;
@@ -1346,7 +1546,7 @@ function findMatch() {
         const errorMsg = typeof i18n !== 'undefined'
             ? i18n.t('enterNickname') || 'Please enter your nickname first!'
             : 'Пожалуйста, введите никнейм!';
-        alert(errorMsg);
+        showErrorDialog(errorMsg);
         // Go back to menu to enter nickname
         showScreen('menu');
         return;
@@ -1357,7 +1557,7 @@ function findMatch() {
     saveStats();
 
     const lobbyStatus = document.getElementById('lobby-status');
-    const searchText = typeof i18n !== 'undefined' ? '🔍 Searching for opponent...' : '🔍 Поиск соперника...';
+    const searchText = getText('searchingOpponent', '🔍 Поиск соперника...');
     lobbyStatus.innerHTML = `<p>${searchText}</p>`;
     lobbyStatus.classList.add('searching');
     socket.emit('find-match', { name: nickname, playerId: gameState.playerId });
@@ -1386,7 +1586,8 @@ function startReadyTimer() {
 
     function updateTimerDisplay() {
         if (secondsLeft > 0) {
-            timerDisplay.textContent = `Готов (${secondsLeft}с)`;
+            const template = getText('readyCountdown', 'Готов ({seconds}с)');
+            timerDisplay.textContent = template.replace('{seconds}', secondsLeft);
         } else {
             timerDisplay.textContent = originalText;
         }
@@ -1692,10 +1893,10 @@ function checkNicknameAvailability(nickname) {
 
     tempSocket.on('nickname-check-result', (data) => {
         if (data.isTaken) {
-            const takenText = typeof i18n !== 'undefined' ? '⚠️ Nickname is taken!' : '⚠️ Никнейм занят!';
+            const takenText = getText('nicknameTaken', '⚠️ Ник уже занят!');
             updateNicknameStatus(takenText, 'error');
         } else {
-            const availableText = typeof i18n !== 'undefined' ? '✅ Available' : '✅ Доступен';
+            const availableText = getText('nicknameAvailable', '✅ Ник свободен');
             updateNicknameStatus(availableText, 'success');
         }
         tempSocket.disconnect();
@@ -1740,8 +1941,8 @@ function setupChatListeners() {
             });
         } else {
             // Show error if not connected
-            const errorMsg = typeof i18n !== 'undefined' ? 'Not connected to server' : 'Нет подключения к серверу';
-            alert(errorMsg);
+            const errorMsg = getText('notConnected', 'Нет подключения к серверу');
+            showErrorDialog(errorMsg);
         }
 
         chatInput.value = '';
@@ -1766,21 +1967,22 @@ function displayUsernames(yourNickname, enemyNickname) {
     const enemyDisplay = document.getElementById('enemy-nickname-display');
 
     if (yourDisplay) {
-        yourDisplay.textContent = yourNickname || 'Your Troops';
+        yourDisplay.textContent = yourNickname || getText('yourTroopsLabel', 'Ваши войска');
     }
 
     if (enemyDisplay) {
-        enemyDisplay.textContent = enemyNickname || 'Enemy';
+        enemyDisplay.textContent = enemyNickname || getText('enemyLabel', 'Враг');
     }
 }
 
 // Surrender function
-function surrender() {
+async function surrender() {
     const confirmMsg = typeof i18n !== 'undefined'
         ? i18n.t('surrenderConfirm')
         : 'Вы уверены, что хотите сдаться?';
 
-    if (!confirm(confirmMsg)) return;
+    const confirmed = await showConfirmDialog(confirmMsg, getDefaultDialogTitle('confirm'));
+    if (!confirmed) return;
 
     // In multiplayer
     if (gameState.multiplayer.isMultiplayer && socket && socket.connected) {
@@ -1792,20 +1994,26 @@ function surrender() {
     }
 }
 
-// Запуск игры при загрузке страницы
-// Сначала пытаемся инициализировать Яндекс SDK (если доступен), затем игру
-document.addEventListener('DOMContentLoaded', function () {
-    // Небольшая задержка для загрузки Яндекс SDK
-    if (typeof YaGames !== 'undefined') {
-        initYandexSDK();
-    } else {
-        // Даем время SDK загрузиться, если он подключен
-        setTimeout(() => {
-            if (typeof YaGames !== 'undefined') {
-                initYandexSDK();
-            } else {
-                initGame();
-            }
-        }, 100);
+// Запуск игры с учетом Yandex SDK
+document.addEventListener('DOMContentLoaded', () => {
+    const MAX_ATTEMPTS = 10;
+    const RETRY_DELAY = 100;
+    let attempts = 0;
+
+    function ensureSdkAndStart() {
+        if (typeof YaGames !== 'undefined' && typeof YaGames.init === 'function') {
+            initYandexSDK();
+            return;
+        }
+
+        if (attempts < MAX_ATTEMPTS) {
+            attempts++;
+            setTimeout(ensureSdkAndStart, RETRY_DELAY);
+        } else {
+            console.warn('⚠️ YaGames SDK not detected, launching game without SDK');
+            startApplication();
+        }
     }
+
+    ensureSdkAndStart();
 });

@@ -215,6 +215,7 @@
             </div>
         </div>
 
+
         <!-- Rules Modal -->
         <div id="rules-modal" class="modal">
             <div class="modal-content">
@@ -250,27 +251,40 @@
                 </div>
             </div>
         </div>
+
+        <!-- System Dialog Modal -->
+        <div id="system-modal" class="modal">
+            <div class="modal-content dialog">
+                <h2 id="system-modal-title" class="dialog-title">Notice</h2>
+                <p id="system-modal-message" class="dialog-message">System message</p>
+                <div class="dialog-actions">
+                    <button class="btn btn-secondary" id="system-modal-cancel">Cancel</button>
+                    <button class="btn btn-primary" id="system-modal-confirm">OK</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Yandex Games SDK -->
-    <script src="https://yandex.ru/games/sdk/v2"></script>
+    <script src="/sdk.js" defer></script>
     <!-- Socket.io: умная загрузка для совместимости с Яндекс Играми -->
-    <!-- Локальная копия в ZIP (для Яндекс Игр с CSP), CDN для Vercel -->
     <script>
-        // Проверяем наличие локального файла или Яндекс домен
-        var isYandexGames = window.location.hostname.includes('yandex') ||
-            window.location.hostname.includes('games') ||
-            typeof YaGames !== 'undefined';
+        // Проверяем наличие локального файла или Яндекс домен (без объявления переменной)
+        (function () {
+            var isYandex = window.location.hostname.includes('yandex') ||
+                window.location.hostname.includes('games') ||
+                typeof YaGames !== 'undefined';
 
-        var socketScript = document.createElement('script');
-        if (isYandexGames) {
-            // Яндекс Игры - локальная копия (из ZIP)
-            socketScript.src = 'socket.io.min.js';
-        } else {
-            // Vercel/другие - CDN
-            socketScript.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
-        }
-        document.head.appendChild(socketScript);
+            var socketScript = document.createElement('script');
+            if (isYandex) {
+                // Яндекс Игры - локальная копия (из ZIP)
+                socketScript.src = 'socket.io.min.js';
+            } else {
+                // Vercel/другие - CDN
+                socketScript.src = 'https://cdn.socket.io/4.5.4/socket.io.min.js';
+            }
+            document.head.appendChild(socketScript);
+        })();
     </script>
     <script src="i18n.js"></script>
     <script src="game.js"></script>

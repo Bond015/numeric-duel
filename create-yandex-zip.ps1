@@ -1,10 +1,11 @@
-# Скрипт для создания ZIP архива игры для публикации на платформах
-# Использование: .\create-game-zip.ps1
+# Скрипт для создания ZIP архива игры для публикации на Яндекс Играх
+# Использование: .\create-yandex-zip.ps1
 
 Write-Host "[*] Создание ZIP архива для публикации игры..." -ForegroundColor Cyan
 
-# Имя архива
-$zipName = "numeric-duel-game.zip"
+# Имя архива с временной меткой
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$zipName = "numeric-duel-yandex-" + $timestamp + ".zip"
 $tempDir = "game-build-temp"
 
 # Очистка предыдущих версий
@@ -21,15 +22,16 @@ if (Test-Path $tempDir) {
 New-Item -ItemType Directory -Path $tempDir | Out-Null
 Write-Host "[+] Создана временная директория" -ForegroundColor Green
 
-  # Файлы для копирования
-  $filesToCopy = @(
-      "index.html",
-      "game.js",
-      "i18n.js",
-      "styles.css",
-      "favicon.svg",
-      "socket.io.min.js"
-  )
+# Файлы для копирования
+$filesToCopy = @(
+    "index.html",
+    "game.js",
+    "i18n.js",
+    "styles.css",
+    "favicon.svg",
+    "socket.io.min.js",
+    "sdk.js"
+)
 
 # Копирование файлов
 Write-Host "[*] Копирование файлов..." -ForegroundColor Yellow
@@ -62,11 +64,7 @@ if (Test-Path $zipName) {
     Write-Host "`n[+] УСПЕХ!" -ForegroundColor Green
     Write-Host "[*] Архив создан: $zipName" -ForegroundColor Cyan
     Write-Host "[*] Размер: $([math]::Round($zipSize, 2)) KB" -ForegroundColor Cyan
-    Write-Host "`n[!] Архив готов для загрузки на платформы!" -ForegroundColor Yellow
-    Write-Host "   - VK Play" -ForegroundColor Gray
-    Write-Host "   - Яндекс Игры" -ForegroundColor Gray
-    Write-Host "   - Kongregate" -ForegroundColor Gray
-    Write-Host "   - И другие..." -ForegroundColor Gray
+    Write-Host "`n[!] Архив готов для загрузки на Яндекс Игры!" -ForegroundColor Yellow
 } else {
     Write-Host "`n[X] ОШИБКА: Не удалось создать архив!" -ForegroundColor Red
     exit 1

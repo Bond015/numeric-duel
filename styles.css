@@ -28,6 +28,22 @@ body {
     color: var(--text-primary);
     overflow-x: hidden;
     position: relative;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+input *,
+textarea * {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
 }
 
 body::before {
@@ -688,6 +704,37 @@ body::before {
     overflow-y: auto;
     position: relative;
     animation: modalSlideIn 0.3s ease;
+}
+
+.modal-content.dialog {
+    max-width: 420px;
+    padding: 32px 36px;
+    text-align: center;
+}
+
+.dialog-title {
+    font-size: 1.6rem;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.dialog-message {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 auto 24px;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.dialog-actions .btn {
+    min-width: 140px;
+    flex: 1 1 140px;
 }
 
 @keyframes modalSlideIn {

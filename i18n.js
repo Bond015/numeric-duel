@@ -2,7 +2,8 @@
 // Main language: English, secondary: Russian
 
 const i18n = {
-    currentLang: localStorage.getItem('gameLanguage') || 'en',
+    defaultLang: 'ru',
+    currentLang: localStorage.getItem('gameLanguage') || 'ru',
 
     translations: {
         ru: {
@@ -17,6 +18,29 @@ const i18n = {
             wins: 'Побед:',
             losses: 'Поражений:',
             topPlayers: '🏆 ТОП ИГРОКОВ',
+
+            // Dialogs
+            infoTitle: 'Сообщение',
+            warningTitle: 'Внимание',
+            errorTitle: 'Ошибка',
+            confirmTitle: 'Подтвердите действие',
+            okBtn: 'Хорошо',
+            cancelBtn: 'Отмена',
+            yesBtn: 'Да',
+            noBtn: 'Нет',
+            nicknameTooShort: '⚠️ Никнейм слишком короткий',
+            nicknameTaken: '⚠️ Ник уже занят!',
+            nicknameAvailable: '✅ Ник свободен',
+            alreadySearching: 'Вы уже ищете противника...',
+            searchingOpponent: '🔍 Поиск соперника...',
+            opponentDisconnected: 'Соперник отключился',
+            notConnected: 'Нет подключения к серверу',
+            connectedToRoom: 'Комната найдена! Подготовьтесь к бою',
+            opponentFound: '✅ Противник найден! Начинаем бой...',
+            defaultPlayerName: 'Игрок',
+            yourTroopsLabel: 'Ваши войска',
+            enemyLabel: 'Враг',
+            readyCountdown: 'Готов ({seconds}с)',
 
             // Selection screen
             selectTroops: 'Выберите войска',
@@ -117,6 +141,29 @@ const i18n = {
             wins: 'Wins:',
             losses: 'Losses:',
             topPlayers: '🏆 TOP PLAYERS',
+
+            // Dialogs
+            infoTitle: 'Notice',
+            warningTitle: 'Warning',
+            errorTitle: 'Error',
+            confirmTitle: 'Confirm Action',
+            okBtn: 'OK',
+            cancelBtn: 'Cancel',
+            yesBtn: 'Yes',
+            noBtn: 'No',
+            nicknameTooShort: '⚠️ Nickname is too short',
+            nicknameTaken: '⚠️ Nickname is taken!',
+            nicknameAvailable: '✅ Available',
+            alreadySearching: 'Already searching for opponent...',
+            searchingOpponent: '🔍 Searching for opponent...',
+            opponentDisconnected: 'Opponent disconnected',
+            notConnected: 'Not connected to server',
+            connectedToRoom: 'Connected to room! Get ready to fight',
+            opponentFound: '✅ Opponent found! Starting game...',
+            defaultPlayerName: 'Player',
+            yourTroopsLabel: 'Your Troops',
+            enemyLabel: 'Enemy',
+            readyCountdown: 'Ready ({seconds}s)',
 
             // Selection screen
             selectTroops: 'Select Troops',
@@ -223,6 +270,9 @@ const i18n = {
 
     // Update all texts in UI
     updateAllTexts() {
+        if (typeof document !== 'undefined') {
+            document.documentElement.setAttribute('lang', this.currentLang || this.defaultLang);
+        }
         // Menu screen
         const menuScreen = document.getElementById('menu-screen');
         if (menuScreen) {

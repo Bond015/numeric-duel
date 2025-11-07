@@ -87,3 +87,5 @@ server/leaderboard.json
 
 # Socket.io local copy (for Yandex Games CSP compatibility)
 socket.io.min.js
+# Yandex Games SDK local copy
+sdk.js
