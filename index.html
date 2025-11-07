@@ -19,24 +19,24 @@
                     <button class="lang-btn" data-lang="ru">RU</button>
                 </div>
 
-                <h1 class="game-title">⚔️ NUMERIC DUEL</h1>
-                <p class="game-subtitle">To the last soldier!</p>
+                <h1 class="game-title">Числовая дуэль</h1>
+                <p class="game-subtitle">До последнего солдата!</p>
 
                 <div class="nickname-input-container">
-                    <input type="text" id="nickname-input" class="nickname-input" placeholder="Enter your nickname"
+                    <input type="text" id="nickname-input" class="nickname-input" placeholder="Введите ваш никнейм"
                         maxlength="20">
                     <div id="nickname-status" class="nickname-status"></div>
                 </div>
 
                 <div class="menu-buttons">
-                    <button class="btn btn-primary" id="start-btn">Start Game (vs AI)</button>
-                    <button class="btn btn-primary" id="multiplayer-btn">Multiplayer</button>
-                    <button class="btn btn-secondary" id="leaderboard-btn">Leaderboard</button>
-                    <button class="btn btn-secondary" id="rules-btn">Rules</button>
+                    <button class="btn btn-primary" id="start-btn">Начать игру (vs AI)</button>
+                    <button class="btn btn-primary" id="multiplayer-btn">Мультиплеер</button>
+                    <button class="btn btn-secondary" id="leaderboard-btn">Лидерборд</button>
+                    <button class="btn btn-secondary" id="rules-btn">Правила</button>
                 </div>
 
                 <div class="mini-leaderboard">
-                    <h3 style="margin: 20px 0 10px; color: var(--warning-color);">🏆 TOP PLAYERS</h3>
+                    <h3 style="margin: 20px 0 10px; color: var(--warning-color);">🏆 ТОП ИГРОКОВ</h3>
                     <div id="mini-leaderboard-list" class="mini-leaderboard-list">
                         <!-- Top players will be added via JS -->
                     </div>
@@ -45,16 +45,16 @@
                 <!-- Chat -->
                 <div class="chat-container">
                     <div class="chat-header">
-                        <h3>💬 Global Chat</h3>
+                        <h3 id="chat-title">💬 Глобальный чат</h3>
                         <button class="btn-chat-toggle" id="chat-toggle">−</button>
                     </div>
                     <div class="chat-messages" id="chat-messages">
-                        <div class="chat-message system">Welcome to Numeric Duel! Chat with other players.</div>
+                        <div class="chat-message system" id="chat-welcome">Добро пожаловать в «Числовую дуэль»! Общайтесь с другими игроками.</div>
                     </div>
                     <div class="chat-input-container">
-                        <input type="text" id="chat-input" class="chat-input" placeholder="Type a message..."
+                        <input type="text" id="chat-input" class="chat-input" placeholder="Введите сообщение..."
                             maxlength="200">
-                        <button class="btn btn-primary btn-send" id="chat-send">Send</button>
+                        <button class="btn btn-primary btn-send" id="chat-send">Отправить</button>
                     </div>
                 </div>
             </div>
@@ -63,44 +63,44 @@
         <!-- Selection Screen -->
         <div id="selection-screen" class="screen">
             <div class="selection-content">
-                <h2>Select Troops</h2>
-                <p class="hint">Choose numbers for your army. Each number is a unit with a troop type</p>
+                <h2>Выберите войска</h2>
+                <p class="hint">Выберите числа для вашей армии. Каждое число — это отряд определенного типа</p>
 
                 <div class="number-grid" id="number-grid">
                     <!-- Numbers will be added via JS -->
                 </div>
 
                 <div class="selected-display">
-                    <h3>Your Army:</h3>
+                    <h3>Ваша армия:</h3>
                     <div class="selected-numbers" id="selected-numbers"></div>
-                    <p class="hint-small">Click the number again to deselect</p>
+                    <p class="hint-small">Нажмите на число повторно, чтобы убрать его</p>
                 </div>
 
-                <button class="btn btn-primary" id="ready-btn" disabled>To Battle!</button>
+                <button class="btn btn-primary" id="ready-btn" disabled>В бой!</button>
             </div>
         </div>
 
         <!-- Flank Setup Screen -->
         <div id="flank-setup-screen" class="screen">
             <div class="flank-content">
-                <h2 id="round-title">Turn 1</h2>
-                <p class="hint">Place troops on flanks</p>
+                <h2 id="round-title">Ход 1</h2>
+                <p class="hint">Расставьте войска на фланги</p>
 
                 <div class="flank-battlefield">
                     <!-- Your flanks -->
                     <div class="flank-player" id="your-flanks">
-                        <h3><span id="your-nickname-display" class="player-nickname">Your Troops</span></h3>
+                        <h3><span id="your-nickname-display" class="player-nickname">Ваши войска</span></h3>
 
                         <div class="flank-slots">
                             <div class="flank-slot flank-left">
-                                <div class="flank-label">Left</div>
+                                <div class="flank-label">Левый</div>
                                 <!-- Unit will appear here -->
                             </div>
                             <div class="flank-slot flank-center">
-                                <div class="flank-label">Center</div>
+                                <div class="flank-label">Центр</div>
                             </div>
                             <div class="flank-slot flank-right">
-                                <div class="flank-label">Right</div>
+                                <div class="flank-label">Правый</div>
                             </div>
                         </div>
 
@@ -109,24 +109,24 @@
                         </div>
 
                         <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
-                            <button class="btn btn-primary start-battle-btn" id="flank-ready-btn">Start Battle!</button>
-                            <button class="btn btn-danger surrender-btn" id="surrender-btn">🏳️ Surrender</button>
+                            <button class="btn btn-primary start-battle-btn" id="flank-ready-btn">Начать бой!</button>
+                            <button class="btn btn-danger surrender-btn" id="surrender-btn">🏳️ Сдаться</button>
                         </div>
                     </div>
 
                     <!-- Enemy flanks -->
                     <div class="flank-player" id="enemy-flanks">
-                        <h3><span id="enemy-nickname-display" class="player-nickname">Enemy</span></h3>
+                        <h3><span id="enemy-nickname-display" class="player-nickname">Враг</span></h3>
 
                         <div class="flank-slots">
                             <div class="flank-slot flank-left">
-                                <div class="flank-label">Left</div>
+                                <div class="flank-label">Левый</div>
                             </div>
                             <div class="flank-slot flank-center">
-                                <div class="flank-label">Center</div>
+                                <div class="flank-label">Центр</div>
                             </div>
                             <div class="flank-slot flank-right">
-                                <div class="flank-label">Right</div>
+                                <div class="flank-label">Правый</div>
                             </div>
                         </div>
 
@@ -156,7 +156,7 @@
                 </div>
 
                 <div class="battle-log" id="battle-log">
-                    <div class="log-entry">Preparing for battle...</div>
+                    <div class="log-entry" id="battle-log-initial">Подготовка к бою...</div>
                 </div>
             </div>
         </div>
@@ -165,11 +165,11 @@
         <div id="result-screen" class="screen">
             <div class="result-content">
                 <div class="result-icon" id="result-icon">🏆</div>
-                <h2 id="result-title">Victory!</h2>
-                <p id="result-message">You won this duel</p>
+                <h2 id="result-title">Победа!</h2>
+                <p id="result-message">Вы победили в этой дуэли</p>
                 <div class="result-buttons">
-                    <button class="btn btn-primary" id="play-again-btn">Play Again</button>
-                    <button class="btn btn-secondary" id="menu-btn">Main Menu</button>
+                    <button class="btn btn-primary" id="play-again-btn">Играть снова</button>
+                    <button class="btn btn-secondary" id="menu-btn">Главное меню</button>
                 </div>
             </div>
         </div>
@@ -177,7 +177,7 @@
         <!-- Leaderboard Screen -->
         <div id="leaderboard-screen" class="screen">
             <div class="menu-content">
-                <h1 class="game-title">🏆 LEADERBOARD</h1>
+                <h1 class="game-title">🏆 ЛИДЕРБОРД</h1>
 
                 <div id="player-position" class="player-position">
                     <!-- Player's position will be added via JS -->
@@ -186,32 +186,32 @@
                 <div id="leaderboard-content" class="leaderboard-content">
                     <div class="leaderboard-header">
                         <span class="rank-header">#</span>
-                        <span class="name-header">Nickname</span>
-                        <span class="stats-header">Rating</span>
-                        <span class="stats-header">Wins</span>
-                        <span class="stats-header">Losses</span>
+                        <span class="name-header">Никнейм</span>
+                        <span class="stats-header">Рейтинг</span>
+                        <span class="stats-header">Побед</span>
+                        <span class="stats-header">Поражений</span>
                     </div>
                     <div id="leaderboard-list" class="leaderboard-list">
                         <!-- Leaders will be added via JS -->
                     </div>
                 </div>
-                <button class="btn btn-secondary" id="leaderboard-back-btn">Back</button>
+                <button class="btn btn-secondary" id="leaderboard-back-btn">Назад</button>
             </div>
         </div>
 
         <!-- Multiplayer Screen (Lobby) -->
         <div id="multiplayer-screen" class="screen">
             <div class="menu-content">
-                <h1 class="game-title">🌐 MULTIPLAYER</h1>
+                <h1 class="game-title">🌐 МУЛЬТИПЛЕЕР</h1>
                 <div id="lobby-status" class="lobby-status">
-                    <p>Click "Find Match" for quick match</p>
+                    <p>Нажмите «Найти игру», чтобы быстро подобрать соперника</p>
                 </div>
                 <div id="room-info" class="room-info" style="display: none;">
-                    <h3>Room: <span id="room-id-display"></span></h3>
-                    <p>Players: <span id="players-count">1</span>/2</p>
+                    <h3><span id="room-label">Комната:</span> <span id="room-id-display"></span></h3>
+                    <p><span id="players-label">Игроки:</span> <span id="players-count">1</span>/2</p>
                 </div>
-                <button class="btn btn-primary" id="find-match-btn">Find Match</button>
-                <button class="btn btn-secondary" id="back-to-menu-btn">Back</button>
+                <button class="btn btn-primary" id="find-match-btn">Найти игру</button>
+                <button class="btn btn-secondary" id="back-to-menu-btn">Назад</button>
             </div>
         </div>
 
@@ -220,34 +220,34 @@
         <div id="rules-modal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
-                <h2>Game Rules</h2>
+                <h2>Правила игры</h2>
                 <div class="rules-content">
-                    <h3>Goal</h3>
-                    <p>Destroy all enemy troops!</p>
+                    <h3>Цель</h3>
+                    <p>Уничтожьте все войска врага!</p>
 
-                    <h3>Unit Types</h3>
+                    <h3>Типы войск</h3>
                     <ul class="rules-list">
-                        <li><strong>⚔️ Warriors</strong> - strong against 🐴 Cavalry</li>
-                        <li><strong>🏹 Archers</strong> - strong against ⚔️ Warriors</li>
-                        <li><strong>🐴 Cavalry</strong> - strong against 🏹 Archers</li>
+                        <li id="rule-warrior"><strong>⚔️ Воины</strong> — сильны против 🐴 Конницы</li>
+                        <li id="rule-archer"><strong>🏹 Лучники</strong> — сильны против ⚔️ Воинов</li>
+                        <li id="rule-cavalry"><strong>🐴 Конница</strong> — сильна против 🏹 Лучников</li>
                     </ul>
 
-                    <h3>Combat Mechanics</h3>
+                    <h3>Механика боя</h3>
                     <ul class="rules-list">
-                        <li>Number = dice rolls (0 to 1)</li>
-                        <li>All rolls sum = damage</li>
-                        <li><strong>Advantage:</strong> damage × 1.5</li>
-                        <li><strong>Equal:</strong> damage × 1.0</li>
-                        <li><strong>Weakness:</strong> damage × 0.5</li>
-                        <li>After combat, subtract damage from number</li>
-                        <li>Number = 0? Unit destroyed!</li>
+                        <li id="rule-number">Число = количество бросков кубика (0 до 1)</li>
+                        <li id="rule-damage">Сумма всех бросков = урон</li>
+                        <li id="rule-advantage"><strong>Преимущество:</strong> урон × 1.5</li>
+                        <li id="rule-equal"><strong>Равенство:</strong> урон × 1.0</li>
+                        <li id="rule-weakness"><strong>Слабость:</strong> урон × 0.5</li>
+                        <li id="rule-after">После боя вычтите урон из числа</li>
+                        <li id="rule-zero">Число = 0? Отряд уничтожен!</li>
                     </ul>
 
-                    <h3>Flanks</h3>
-                    <p>Your left flank hits enemy left, center hits center, right hits enemy right.</p>
+                    <h3>Фланги</h3>
+                    <p id="rule-flanks">Левый фланг бьёт по левому врага, центр по центру, правый по правому.</p>
 
-                    <h3>Victory</h3>
-                    <p>The one who destroyed all enemy units wins!</p>
+                    <h3>Победа</h3>
+                    <p id="rule-victory">Побеждает тот, кто уничтожил все отряды противника!</p>
                 </div>
             </div>
         </div>
@@ -255,11 +255,11 @@
         <!-- System Dialog Modal -->
         <div id="system-modal" class="modal">
             <div class="modal-content dialog">
-                <h2 id="system-modal-title" class="dialog-title">Notice</h2>
-                <p id="system-modal-message" class="dialog-message">System message</p>
+                <h2 id="system-modal-title" class="dialog-title">Сообщение</h2>
+                <p id="system-modal-message" class="dialog-message">Системное сообщение</p>
                 <div class="dialog-actions">
-                    <button class="btn btn-secondary" id="system-modal-cancel">Cancel</button>
-                    <button class="btn btn-primary" id="system-modal-confirm">OK</button>
+                    <button class="btn btn-secondary" id="system-modal-cancel">Отмена</button>
+                    <button class="btn btn-primary" id="system-modal-confirm">Хорошо</button>
                 </div>
             </div>
         </div>

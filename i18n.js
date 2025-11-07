@@ -8,7 +8,8 @@ const i18n = {
     translations: {
         ru: {
             // Menu screen
-            gameTitle: '⚔️ ЧИСЛОВАЯ ДУЭЛЬ',
+            gameTitle: 'Числовая дуэль',
+            gameName: 'Числовая дуэль',
             gameSubtitle: 'До последнего солдата!',
             nicknamePlaceholder: 'Введите ваш никнейм',
             startGameBtn: 'Начать игру (vs AI)',
@@ -18,6 +19,10 @@ const i18n = {
             wins: 'Побед:',
             losses: 'Поражений:',
             topPlayers: '🏆 ТОП ИГРОКОВ',
+            chatTitle: '💬 Глобальный чат',
+            chatWelcome: 'Добро пожаловать в «Числовую дуэль»! Общайтесь с другими игроками.',
+            chatPlaceholder: 'Введите сообщение...',
+            chatSendBtn: 'Отправить',
 
             // Dialogs
             infoTitle: 'Сообщение',
@@ -28,6 +33,7 @@ const i18n = {
             cancelBtn: 'Отмена',
             yesBtn: 'Да',
             noBtn: 'Нет',
+            systemMessagePlaceholder: 'Системное сообщение',
             nicknameTooShort: '⚠️ Никнейм слишком короткий',
             checkingNickname: '⏳ Проверяем ник...',
             nicknameCheckFailed: '⚠️ Не удалось проверить ник. Попробуйте позже.',
@@ -61,6 +67,7 @@ const i18n = {
             right: 'Правый',
             startBattleBtn: 'Начать бой!',
             preparingBattle: 'Подготовка к бою...',
+            battleLogInitial: 'Подготовка к бою...',
             surrenderBtn: '🏳️ Сдаться',
             surrenderConfirm: 'Вы уверены, что хотите сдаться?',
 
@@ -90,29 +97,28 @@ const i18n = {
             disconnected: '❌ Отключено от сервера',
             roomCreated: 'Комната создана! Ожидание второго игрока...',
             playersInRoom: 'Игроков:',
+            roomLabel: 'Комната:',
+            playersLabel: 'Игроки:',
 
             // Rules
             rulesTitle: 'Правила игры',
-            goal: 'Цель игры',
+            goal: 'Цель',
             goalDesc: 'Уничтожить все войска врага!',
             unitTypes: 'Типы войск',
             combatMechanic: 'Механика боя',
             flanksDesc: 'Фланги',
             victoryCondition: 'Победа',
 
-            warriorStrong: '⚔️ Войны - сильны против 🐴 Конницы',
-            archerStrong: '🏹 Лучники - сильны против ⚔️ Войнов',
-            cavalryStrong: '🐴 Конница - сильна против 🏹 Лучников',
+            warriorStrong: '⚔️ Воины — сильны против 🐴 Конницы',
+            archerStrong: '🏹 Лучники — сильны против ⚔️ Воинов',
+            cavalryStrong: '🐴 Конница — сильна против 🏹 Лучников',
 
             numberMechanic: 'Число = количество бросков кубика (0 до 1)',
-            rollsSum: 'Все броски складываются = урон',
-            advantage: 'Преимущество:',
-            advantageDesc: 'урон × 1.5',
-            equal: 'Одинаково:',
-            equalDesc: 'урон × 1.0',
-            weakness: 'Слабость:',
-            weaknessDesc: 'урон × 0.5',
-            afterCombat: 'После боя вычитаем урон от числа',
+            rollsSum: 'Сумма всех бросков = урон',
+            advantageFull: '<strong>Преимущество:</strong> урон × 1.5',
+            equalFull: '<strong>Равенство:</strong> урон × 1.0',
+            weaknessFull: '<strong>Слабость:</strong> урон × 0.5',
+            afterCombat: 'После боя вычтите урон из числа',
             zeroDestroyed: 'Число = 0? Отряд уничтожен!',
 
             flanksDescFull: 'Ваш левый фланг бьет по левому врага, центр по центру, правый по правому врага.',
@@ -133,7 +139,8 @@ const i18n = {
 
         en: {
             // Menu screen
-            gameTitle: '⚔️ NUMERIC DUEL',
+            gameTitle: 'Numeric Duel',
+            gameName: 'Numeric Duel',
             gameSubtitle: 'To the last soldier!',
             nicknamePlaceholder: 'Enter your nickname',
             startGameBtn: 'Start Game (vs AI)',
@@ -143,6 +150,10 @@ const i18n = {
             wins: 'Wins:',
             losses: 'Losses:',
             topPlayers: '🏆 TOP PLAYERS',
+            chatTitle: '💬 Global Chat',
+            chatWelcome: 'Welcome to Numeric Duel! Chat with other players.',
+            chatPlaceholder: 'Type a message...',
+            chatSendBtn: 'Send',
 
             // Dialogs
             infoTitle: 'Notice',
@@ -153,6 +164,7 @@ const i18n = {
             cancelBtn: 'Cancel',
             yesBtn: 'Yes',
             noBtn: 'No',
+            systemMessagePlaceholder: 'System message',
             nicknameTooShort: '⚠️ Nickname is too short',
             checkingNickname: '⏳ Checking nickname...',
             nicknameCheckFailed: '⚠️ Could not verify nickname. Try again later.',
@@ -186,6 +198,7 @@ const i18n = {
             right: 'Right',
             startBattleBtn: 'Start Battle!',
             preparingBattle: 'Preparing for battle...',
+            battleLogInitial: 'Preparing for battle...',
             surrenderBtn: '🏳️ Surrender',
             surrenderConfirm: 'Are you sure you want to surrender?',
 
@@ -215,6 +228,8 @@ const i18n = {
             disconnected: '❌ Disconnected from server',
             roomCreated: 'Room created! Waiting for second player...',
             playersInRoom: 'Players:',
+            roomLabel: 'Room:',
+            playersLabel: 'Players:',
 
             // Rules
             rulesTitle: 'Game Rules',
@@ -225,19 +240,16 @@ const i18n = {
             flanksDesc: 'Flanks',
             victoryCondition: 'Victory',
 
-            warriorStrong: '⚔️ Warriors - strong against 🐴 Cavalry',
-            archerStrong: '🏹 Archers - strong against ⚔️ Warriors',
-            cavalryStrong: '🐴 Cavalry - strong against 🏹 Archers',
+            warriorStrong: '⚔️ Warriors — strong against 🐴 Cavalry',
+            archerStrong: '🏹 Archers — strong against ⚔️ Warriors',
+            cavalryStrong: '🐴 Cavalry — strong against 🏹 Archers',
 
             numberMechanic: 'Number = dice rolls (0 to 1)',
-            rollsSum: 'All rolls sum = damage',
-            advantage: 'Advantage:',
-            advantageDesc: 'damage × 1.5',
-            equal: 'Equal:',
-            equalDesc: 'damage × 1.0',
-            weakness: 'Weakness:',
-            weaknessDesc: 'damage × 0.5',
-            afterCombat: 'After combat, subtract damage from number',
+            rollsSum: 'Sum of all rolls = damage',
+            advantageFull: '<strong>Advantage:</strong> damage × 1.5',
+            equalFull: '<strong>Equal:</strong> damage × 1.0',
+            weaknessFull: '<strong>Weakness:</strong> damage × 0.5',
+            afterCombat: 'After combat, subtract damage from the number',
             zeroDestroyed: 'Number = 0? Unit destroyed!',
 
             flanksDescFull: 'Your left flank hits enemy left, center hits center, right hits enemy right.',
@@ -307,6 +319,18 @@ const i18n = {
 
             const topPlayersTitle = menuScreen.querySelector('.mini-leaderboard h3');
             if (topPlayersTitle) topPlayersTitle.textContent = this.t('topPlayers');
+
+            const chatTitle = document.getElementById('chat-title');
+            if (chatTitle) chatTitle.textContent = this.t('chatTitle');
+
+            const chatWelcome = document.getElementById('chat-welcome');
+            if (chatWelcome) chatWelcome.textContent = this.t('chatWelcome');
+
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) chatInput.placeholder = this.t('chatPlaceholder');
+
+            const chatSend = document.getElementById('chat-send');
+            if (chatSend) chatSend.textContent = this.t('chatSendBtn');
         }
 
         // Selection screen
@@ -353,10 +377,8 @@ const i18n = {
             const surrenderBtn = document.getElementById('surrender-btn');
             if (surrenderBtn) surrenderBtn.textContent = this.t('surrenderBtn');
 
-            const battleLog = document.getElementById('battle-log');
-            if (battleLog && battleLog.querySelector('.log-entry')) {
-                battleLog.querySelector('.log-entry').textContent = this.t('preparingBattle');
-            }
+            const battleLogInitial = document.getElementById('battle-log-initial');
+            if (battleLogInitial) battleLogInitial.textContent = this.t('battleLogInitial');
         }
 
         // Result screen
@@ -374,6 +396,15 @@ const i18n = {
         if (leaderboardScreen) {
             const title = leaderboardScreen.querySelector('.game-title');
             if (title) title.textContent = this.t('leaderboardTitle');
+
+            const headerSpans = leaderboardScreen.querySelectorAll('.leaderboard-header span');
+            if (headerSpans.length >= 5) {
+                headerSpans[0].textContent = this.t('rankHeader');
+                headerSpans[1].textContent = this.t('nicknameHeader');
+                headerSpans[2].textContent = this.t('ratingHeader');
+                headerSpans[3].textContent = this.t('winsHeader');
+                headerSpans[4].textContent = this.t('lossesHeader');
+            }
 
             const backBtn = document.getElementById('leaderboard-back-btn');
             if (backBtn) backBtn.textContent = this.t('backBtn');
@@ -396,6 +427,12 @@ const i18n = {
 
             const backBtn = document.getElementById('back-to-menu-btn');
             if (backBtn) backBtn.textContent = this.t('backBtn');
+
+            const roomLabel = document.getElementById('room-label');
+            if (roomLabel) roomLabel.textContent = this.t('roomLabel');
+
+            const playersLabel = document.getElementById('players-label');
+            if (playersLabel) playersLabel.textContent = this.t('playersLabel');
         }
 
         // Rules modal
@@ -404,12 +441,64 @@ const i18n = {
             const title = rulesModal.querySelector('h2');
             if (title) title.textContent = this.t('rulesTitle');
 
-            const goalTitle = rulesModal.querySelector('h3');
-            if (goalTitle) goalTitle.textContent = this.t('goal');
+            const ruleHeadings = rulesModal.querySelectorAll('.rules-content h3');
+            if (ruleHeadings[0]) ruleHeadings[0].textContent = this.t('goal');
+            if (ruleHeadings[1]) ruleHeadings[1].textContent = this.t('unitTypes');
+            if (ruleHeadings[2]) ruleHeadings[2].textContent = this.t('combatMechanic');
+            if (ruleHeadings[3]) ruleHeadings[3].textContent = this.t('flanksDesc');
+            if (ruleHeadings[4]) ruleHeadings[4].textContent = this.t('victoryCondition');
 
-            const goalDesc = rulesModal.querySelector('.rules-content p');
-            if (goalDesc) goalDesc.textContent = this.t('goalDesc');
+            const paragraphs = rulesModal.querySelectorAll('.rules-content p');
+            if (paragraphs[0]) paragraphs[0].textContent = this.t('goalDesc');
+
+            const warriorItem = document.getElementById('rule-warrior');
+            if (warriorItem) warriorItem.innerHTML = this.t('warriorStrong');
+
+            const archerItem = document.getElementById('rule-archer');
+            if (archerItem) archerItem.innerHTML = this.t('archerStrong');
+
+            const cavalryItem = document.getElementById('rule-cavalry');
+            if (cavalryItem) cavalryItem.innerHTML = this.t('cavalryStrong');
+
+            const numberRule = document.getElementById('rule-number');
+            if (numberRule) numberRule.textContent = this.t('numberMechanic');
+
+            const damageRule = document.getElementById('rule-damage');
+            if (damageRule) damageRule.textContent = this.t('rollsSum');
+
+            const advantageRule = document.getElementById('rule-advantage');
+            if (advantageRule) advantageRule.innerHTML = this.t('advantageFull');
+
+            const equalRule = document.getElementById('rule-equal');
+            if (equalRule) equalRule.innerHTML = this.t('equalFull');
+
+            const weaknessRule = document.getElementById('rule-weakness');
+            if (weaknessRule) weaknessRule.innerHTML = this.t('weaknessFull');
+
+            const afterRule = document.getElementById('rule-after');
+            if (afterRule) afterRule.textContent = this.t('afterCombat');
+
+            const zeroRule = document.getElementById('rule-zero');
+            if (zeroRule) zeroRule.textContent = this.t('zeroDestroyed');
+
+            const flanksRule = document.getElementById('rule-flanks');
+            if (flanksRule) flanksRule.textContent = this.t('flanksDescFull');
+
+            const victoryRule = document.getElementById('rule-victory');
+            if (victoryRule) victoryRule.textContent = this.t('victoryDesc');
         }
+
+        const systemDialogTitle = document.getElementById('system-modal-title');
+        if (systemDialogTitle) systemDialogTitle.textContent = this.t('infoTitle');
+
+        const systemDialogMessage = document.getElementById('system-modal-message');
+        if (systemDialogMessage) systemDialogMessage.textContent = this.t('systemMessagePlaceholder');
+
+        const systemConfirm = document.getElementById('system-modal-confirm');
+        if (systemConfirm) systemConfirm.textContent = this.t('okBtn');
+
+        const systemCancel = document.getElementById('system-modal-cancel');
+        if (systemCancel) systemCancel.textContent = this.t('cancelBtn');
     }
 };
 

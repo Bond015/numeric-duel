@@ -249,8 +249,33 @@ function autoDetectLanguage(ysdk) {
     if (!ysdk || typeof i18n === 'undefined') return;
     const detected = ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang;
     const stored = localStorage.getItem('gameLanguage');
-    if (!stored && detected && i18n.translations && i18n.translations[detected]) {
-        i18n.setLanguage(detected);
+    if (!detected) {
+        return;
+    }
+
+    const normalizeLang = (langCode) => {
+        if (!langCode) return null;
+        const lower = String(langCode).toLowerCase();
+        if (i18n.translations[lower]) return lower;
+
+        const short = lower.split(/[-_]/)[0];
+        if (i18n.translations[short]) return short;
+
+        switch (short) {
+            case 'ru':
+                return 'ru';
+            case 'en':
+                return 'en';
+            default:
+                return null;
+        }
+    };
+
+    const normalized = normalizeLang(detected);
+    if (!normalized) return;
+
+    if (!stored || stored !== normalized) {
+        i18n.setLanguage(normalized);
     }
 }
 
