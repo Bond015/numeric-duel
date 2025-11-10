@@ -39,7 +39,8 @@ const adState = {
     lastFullscreenTime: 0,
     fullscreenCooldownMs: 0,
     showingFullscreen: false,
-    bannerVisible: false
+    bannerVisible: false,
+    fullscreenQueued: false
 };
 
 const INTERACTIVE_SELECTOR = 'input, textarea, [contenteditable="true"], .allow-selection';
@@ -283,12 +284,21 @@ function updateBannerVisibility(screenName) {
     }
 }
 
-function showFullscreenAd(trigger = 'match-end') {
-    if (!yaGamesSDK || !yaGamesSDK.adv || typeof yaGamesSDK.adv.showFullscreenAdv !== 'function') return;
-    if (adState.showingFullscreen) return;
+function showFullscreenAd(trigger = 'match-end', onCloseCallback) {
+    if (!yaGamesSDK || !yaGamesSDK.adv || typeof yaGamesSDK.adv.showFullscreenAdv !== 'function') {
+        onCloseCallback && onCloseCallback();
+        return false;
+    }
+    if (adState.showingFullscreen) {
+        onCloseCallback && onCloseCallback();
+        return false;
+    }
 
     const now = Date.now();
-    if (now - adState.lastFullscreenTime < adState.fullscreenCooldownMs) return;
+    if (now - adState.lastFullscreenTime < adState.fullscreenCooldownMs) {
+        onCloseCallback && onCloseCallback();
+        return false;
+    }
 
     adState.showingFullscreen = true;
     try {
@@ -300,16 +310,21 @@ function showFullscreenAd(trigger = 'match-end') {
                     if (wasShown) {
                         adState.lastFullscreenTime = Date.now();
                     }
+                    onCloseCallback && onCloseCallback();
                 },
                 onError: (error) => {
                     adState.showingFullscreen = false;
                     console.warn('[Ads] Fullscreen ad error:', error);
+                    onCloseCallback && onCloseCallback();
                 }
             }
         });
+        return true;
     } catch (error) {
         adState.showingFullscreen = false;
         console.warn('[Ads] Failed to request fullscreen ad:', error);
+        onCloseCallback && onCloseCallback();
+        return false;
     }
 }
 
@@ -342,6 +357,7 @@ function autoDetectLanguage(ysdk) {
     if (!ysdk || typeof i18n === 'undefined') return;
     const detected = ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang;
     const stored = localStorage.getItem('gameLanguage');
+    const manualFlag = localStorage.getItem('gameLanguageManual') === '1';
     if (!detected) {
         return;
     }
@@ -367,8 +383,15 @@ function autoDetectLanguage(ysdk) {
     const normalized = normalizeLang(detected);
     if (!normalized) return;
 
-    if (!stored || stored !== normalized) {
+    if (!stored || (!manualFlag && stored !== normalized)) {
         i18n.setLanguage(normalized);
+        localStorage.setItem('gameLanguageManual', '0');
+    } else if (!manualFlag) {
+        i18n.setLanguage(normalized);
+        localStorage.setItem('gameLanguageManual', '0');
+    } else {
+        // Manual language set by the player, respect it
+        i18n.updateAllTexts();
     }
 }
 
@@ -376,6 +399,9 @@ function startApplication() {
     if (gameInitialized) return;
     gameInitialized = true;
     initGame();
+    if (yaGamesSDK) {
+        autoDetectLanguage(yaGamesSDK);
+    }
     gameLogicReady = true;
     tryReportGameReady();
 }
@@ -391,11 +417,11 @@ async function initYandexSDK() {
         const ysdk = await YaGames.init();
         yaGamesSDK = ysdk;
         console.log('✅ Yandex SDK initialized');
-        autoDetectLanguage(ysdk);
         initializeAds(ysdk);
         sdkReady = true;
-        tryReportGameReady();
         startApplication();
+        autoDetectLanguage(ysdk);
+        tryReportGameReady();
     } catch (error) {
         console.warn('⚠️ Yandex SDK initialization failed:', error);
         startApplication();
@@ -500,8 +526,27 @@ function setupEventListeners() {
     document.getElementById('ready-btn').addEventListener('click', startBattle);
     document.getElementById('flank-ready-btn').addEventListener('click', startFlankBattle);
     document.getElementById('surrender-btn').addEventListener('click', surrender);
-    document.getElementById('play-again-btn').addEventListener('click', resetGame);
-    document.getElementById('menu-btn').addEventListener('click', backToMenu);
+    const playAgainBtn = document.getElementById('play-again-btn');
+    if (playAgainBtn) {
+        playAgainBtn.addEventListener('click', () => {
+            const wasMultiplayer = gameState.multiplayer.isMultiplayer;
+            runAfterResultAction(() => {
+                resetGame();
+                if (!wasMultiplayer) {
+                    startGame();
+                }
+            });
+        });
+    }
+
+    const menuBtn = document.getElementById('menu-btn');
+    if (menuBtn) {
+        menuBtn.addEventListener('click', () => {
+            runAfterResultAction(() => {
+                backToMenu();
+            });
+        });
+    }
 
     // Модальное окно правил
     const modal = document.getElementById('rules-modal');
@@ -518,6 +563,7 @@ function setupEventListeners() {
             const lang = btn.dataset.lang;
             if (typeof i18n !== 'undefined') {
                 i18n.setLanguage(lang);
+                localStorage.setItem('gameLanguageManual', '1');
                 // Update active button
                 langButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -1369,12 +1415,7 @@ function showResult(icon, title, message, type) {
 }
 
 function handleMatchEndAds() {
-    const triggerAd = () => showFullscreenAd('match-end');
-    if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(triggerAd);
-    } else {
-        setTimeout(triggerAd, 300);
-    }
+    adState.fullscreenQueued = true;
 }
 
 // Сброс игры
@@ -1408,6 +1449,20 @@ function showScreen(screenName) {
     document.getElementById(`${screenName}-screen`).classList.add('active');
     gameState.screen = screenName;
     updateBannerVisibility(screenName);
+}
+
+function runAfterResultAction(action) {
+    if (typeof action !== 'function') return;
+
+    if (adState.fullscreenQueued) {
+        adState.fullscreenQueued = false;
+        const adStarted = showFullscreenAd('result-action', action);
+        if (!adStarted) {
+            action();
+        }
+    } else {
+        action();
+    }
 }
 
 // Мультиплеер функции
