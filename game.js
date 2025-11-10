@@ -356,11 +356,7 @@ function tryReportGameReady() {
 function autoDetectLanguage(ysdk) {
     if (!ysdk || typeof i18n === 'undefined') return;
     const detected = ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang;
-    const stored = localStorage.getItem('gameLanguage');
-    const manualFlag = localStorage.getItem('gameLanguageManual') === '1';
-    if (!detected) {
-        return;
-    }
+    if (!detected) return;
 
     const normalizeLang = (langCode) => {
         if (!langCode) return null;
@@ -383,14 +379,14 @@ function autoDetectLanguage(ysdk) {
     const normalized = normalizeLang(detected);
     if (!normalized) return;
 
-    if (!stored || (!manualFlag && stored !== normalized)) {
+    const stored = localStorage.getItem('gameLanguage');
+    if (stored !== normalized) {
+        localStorage.setItem('gameLanguage', normalized);
+    }
+
+    if (i18n.currentLang !== normalized) {
         i18n.setLanguage(normalized);
-        localStorage.setItem('gameLanguageManual', '0');
-    } else if (!manualFlag) {
-        i18n.setLanguage(normalized);
-        localStorage.setItem('gameLanguageManual', '0');
     } else {
-        // Manual language set by the player, respect it
         i18n.updateAllTexts();
     }
 }
@@ -555,31 +551,6 @@ function setupEventListeners() {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('active');
     });
-
-    // Language switcher buttons
-    const langButtons = document.querySelectorAll('.lang-btn');
-    langButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const lang = btn.dataset.lang;
-            if (typeof i18n !== 'undefined') {
-                i18n.setLanguage(lang);
-                localStorage.setItem('gameLanguageManual', '1');
-                // Update active button
-                langButtons.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            }
-        });
-    });
-
-    // Set initial active language button
-    if (typeof i18n !== 'undefined') {
-        const currentLang = i18n.currentLang || i18n.defaultLang || 'ru';
-        langButtons.forEach(btn => {
-            if (btn.dataset.lang === currentLang) {
-                btn.classList.add('active');
-            }
-        });
-    }
 
     // Nickname validation
     const nicknameInput = document.getElementById('nickname-input');
