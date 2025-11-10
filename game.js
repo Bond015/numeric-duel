@@ -35,6 +35,17 @@ let gameInitialized = false;
 let gameLogicReady = false;
 let gameReadyReported = false;
 
+const adState = {
+    lastFullscreenTime: 0,
+    fullscreenCooldownMs: 0,
+    showingFullscreen: false,
+    bannerVisible: false,
+    rewardClaimedForMatch: false,
+    rewardInProgress: false
+};
+
+const MATCH_END_REWARD = 50;
+
 const INTERACTIVE_SELECTOR = 'input, textarea, [contenteditable="true"], .allow-selection';
 
 function isInteractiveTarget(target) {
@@ -221,6 +232,168 @@ function showConfirmDialog(message, title) {
     });
 }
 
+function initializeAds(ysdk) {
+    if (!ysdk || !ysdk.adv) return;
+    updateBannerVisibility(gameState.screen || 'menu');
+}
+
+function updateBannerVisibility(screenName) {
+    if (!yaGamesSDK || !yaGamesSDK.adv) return;
+    const adv = yaGamesSDK.adv;
+    const shouldShow = screenName === 'menu';
+
+    if (shouldShow && typeof adv.showBannerAdv === 'function') {
+        if (typeof adv.getBannerAdvStatus === 'function') {
+            adv.getBannerAdvStatus()
+                .then(({ stickyAdvIsShowing, reason }) => {
+                    if (stickyAdvIsShowing) {
+                        adState.bannerVisible = true;
+                        return;
+                    }
+                    if (reason) {
+                        console.warn('Sticky banner not shown:', reason);
+                        return;
+                    }
+                    const result = adv.showBannerAdv();
+                    if (result && typeof result.then === 'function') {
+                        result.then(() => adState.bannerVisible = true)
+                            .catch(err => console.warn('Failed to show banner:', err));
+                    } else {
+                        adState.bannerVisible = true;
+                    }
+                })
+                .catch(err => console.warn('Failed to get banner status:', err));
+        } else {
+            try {
+                const result = adv.showBannerAdv();
+                if (result && typeof result.then === 'function') {
+                    result.then(() => adState.bannerVisible = true)
+                        .catch(err => console.warn('Failed to show banner:', err));
+                } else {
+                    adState.bannerVisible = true;
+                }
+            } catch (err) {
+                console.warn('Failed to show banner:', err);
+            }
+        }
+    } else if (!shouldShow && adState.bannerVisible && typeof adv.hideBannerAdv === 'function') {
+        const result = adv.hideBannerAdv();
+        if (result && typeof result.then === 'function') {
+            result.then(() => adState.bannerVisible = false)
+                .catch(err => console.warn('Failed to hide banner:', err));
+        } else {
+            adState.bannerVisible = false;
+        }
+    }
+}
+
+function showFullscreenAd(trigger = 'match-end') {
+    if (!yaGamesSDK || !yaGamesSDK.adv || typeof yaGamesSDK.adv.showFullscreenAdv !== 'function') return;
+    if (adState.showingFullscreen) return;
+
+    const now = Date.now();
+    if (now - adState.lastFullscreenTime < adState.fullscreenCooldownMs) return;
+
+    adState.showingFullscreen = true;
+    try {
+        yaGamesSDK.adv.showFullscreenAdv({
+            callbacks: {
+                onOpen: () => console.log('[Ads] Fullscreen ad opened:', trigger),
+                onClose: (wasShown) => {
+                    adState.showingFullscreen = false;
+                    if (wasShown) {
+                        adState.lastFullscreenTime = Date.now();
+                    }
+                },
+                onError: (error) => {
+                    adState.showingFullscreen = false;
+                    console.warn('[Ads] Fullscreen ad error:', error);
+                }
+            }
+        });
+    } catch (error) {
+        adState.showingFullscreen = false;
+        console.warn('[Ads] Failed to request fullscreen ad:', error);
+    }
+}
+
+function showRewardedVideoAd() {
+    if (!yaGamesSDK || !yaGamesSDK.adv || typeof yaGamesSDK.adv.showRewardedVideo !== 'function') {
+        showInfoDialog(getText('rewardUnavailable', 'Реклама сейчас недоступна. Попробуйте позже.'));
+        return;
+    }
+    if (adState.rewardInProgress || adState.rewardClaimedForMatch) return;
+
+    adState.rewardInProgress = true;
+    updateRewardButtonState();
+
+    try {
+        yaGamesSDK.adv.showRewardedVideo({
+            callbacks: {
+                onOpen: () => console.log('[Ads] Rewarded video opened'),
+                onRewarded: () => {
+                    if (!adState.rewardClaimedForMatch) {
+                        adState.rewardClaimedForMatch = true;
+                        grantRewardTokens(MATCH_END_REWARD);
+                    }
+                },
+                onClose: () => {
+                    adState.rewardInProgress = false;
+                    updateRewardButtonState();
+                },
+                onError: (error) => {
+                    adState.rewardInProgress = false;
+                    console.warn('[Ads] Rewarded video error:', error);
+                    showErrorDialog(getText('rewardError', 'Не удалось показать рекламу. Попробуйте позже.'));
+                    updateRewardButtonState();
+                }
+            }
+        });
+    } catch (error) {
+        adState.rewardInProgress = false;
+        console.warn('[Ads] Failed to request rewarded video:', error);
+        showErrorDialog(getText('rewardError', 'Не удалось показать рекламу. Попробуйте позже.'));
+        updateRewardButtonState();
+    }
+}
+
+function grantRewardTokens(amount) {
+    if (!amount || amount <= 0) return;
+    gameState.rewardTokens = (gameState.rewardTokens || 0) + amount;
+    localStorage.setItem('gameRewardTokens', gameState.rewardTokens);
+    updateRewardUI();
+    const template = getText('rewardReceived', `Вы получили бонус: +${amount}!`);
+    const message = template.replace('{amount}', amount);
+    showInfoDialog(message, getDefaultDialogTitle('info'));
+}
+
+function updateRewardUI() {
+    const counter = document.getElementById('reward-counter');
+    if (counter) {
+        const template = getText('rewardBalance', 'Бонусы: {amount}');
+        counter.textContent = template.replace('{amount}', gameState.rewardTokens || 0);
+        const canShow = yaGamesSDK && yaGamesSDK.adv && typeof yaGamesSDK.adv.showRewardedVideo === 'function';
+        counter.style.display = canShow ? 'block' : 'none';
+    }
+    updateRewardButtonState();
+}
+
+function updateRewardButtonState() {
+    const rewardBtn = document.getElementById('rewarded-ad-btn');
+    if (!rewardBtn) return;
+
+    const canShow = yaGamesSDK && yaGamesSDK.adv && typeof yaGamesSDK.adv.showRewardedVideo === 'function';
+    if (!canShow) {
+        rewardBtn.style.display = 'none';
+        return;
+    }
+
+    rewardBtn.style.display = 'inline-flex';
+    rewardBtn.disabled = adState.rewardInProgress || adState.rewardClaimedForMatch;
+    const labelKey = adState.rewardClaimedForMatch ? 'rewardAlreadyTaken' : 'rewardedAdBtn';
+    rewardBtn.textContent = getText(labelKey, adState.rewardClaimedForMatch ? 'Награда получена' : 'Получить награду');
+}
+
 function tryReportGameReady() {
     if (gameReadyReported) return;
     if (!gameLogicReady) return;
@@ -299,6 +472,8 @@ async function initYandexSDK() {
         yaGamesSDK = ysdk;
         console.log('✅ Yandex SDK initialized');
         autoDetectLanguage(ysdk);
+        initializeAds(ysdk);
+        updateRewardUI();
         sdkReady = true;
         tryReportGameReady();
         startApplication();
@@ -327,7 +502,8 @@ let gameState = {
     stats: {
         wins: parseInt(localStorage.getItem('gameWins') || '0'),
         losses: parseInt(localStorage.getItem('gameLosses') || '0')
-    }
+    },
+    rewardTokens: parseInt(localStorage.getItem('gameRewardTokens') || '0', 10) || 0
 };
 
 // Генерация уникального ID игрока
@@ -348,6 +524,7 @@ function initGame() {
         }
         i18n.updateAllTexts();
     }
+    updateRewardUI();
 
     // Initialize global chat connection
     initGlobalChat();
@@ -385,6 +562,7 @@ function saveStats() {
     localStorage.setItem('gameWins', gameState.stats.wins);
     localStorage.setItem('gameLosses', gameState.stats.losses);
     localStorage.setItem('gamePlayerId', gameState.playerId);
+    localStorage.setItem('gameRewardTokens', gameState.rewardTokens || 0);
 
     // Сохраняем никнейм
     const nicknameInput = document.getElementById('nickname-input');
@@ -408,6 +586,10 @@ function setupEventListeners() {
     document.getElementById('surrender-btn').addEventListener('click', surrender);
     document.getElementById('play-again-btn').addEventListener('click', resetGame);
     document.getElementById('menu-btn').addEventListener('click', backToMenu);
+    const rewardBtn = document.getElementById('rewarded-ad-btn');
+    if (rewardBtn) {
+        rewardBtn.addEventListener('click', showRewardedVideoAd);
+    }
 
     // Модальное окно правил
     const modal = document.getElementById('rules-modal');
@@ -427,6 +609,7 @@ function setupEventListeners() {
                 // Update active button
                 langButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
+                updateRewardUI();
             }
         });
     });
@@ -1271,6 +1454,20 @@ function showResult(icon, title, message, type) {
     }
 
     showScreen('result');
+    handleMatchEndAds();
+}
+
+function handleMatchEndAds() {
+    adState.rewardClaimedForMatch = false;
+    adState.rewardInProgress = false;
+    updateRewardUI();
+
+    const triggerAd = () => showFullscreenAd('match-end');
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(triggerAd);
+    } else {
+        setTimeout(triggerAd, 300);
+    }
 }
 
 // Сброс игры
@@ -1303,6 +1500,7 @@ function showScreen(screenName) {
 
     document.getElementById(`${screenName}-screen`).classList.add('active');
     gameState.screen = screenName;
+    updateBannerVisibility(screenName);
 }
 
 // Мультиплеер функции

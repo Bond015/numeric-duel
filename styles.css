@@ -663,6 +663,13 @@ body::before {
     margin-bottom: 40px;
 }
 
+.reward-counter {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: -20px 0 10px;
+    text-align: center;
+}
+
 .result-buttons {
     display: flex;
     gap: 20px;
