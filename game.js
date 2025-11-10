@@ -2122,17 +2122,26 @@ function setupChatListeners() {
 function displayUsernames(yourNickname, enemyNickname) {
     const yourDisplay = document.getElementById('your-nickname-display');
     const enemyDisplay = document.getElementById('enemy-nickname-display');
+    const defaultPlayerLocalized = getText('defaultPlayerName', 'Игрок');
+    const defaultEnemyLocalized = getText('enemyLabel', 'Враг');
+    const shouldFallback = (value, defaults = []) => {
+        if (!value || !value.trim()) return true;
+        const normalized = value.trim().toLowerCase();
+        return defaults.some(item => item && normalized === item.trim().toLowerCase());
+    };
 
     if (yourDisplay) {
-        yourDisplay.textContent = yourNickname && yourNickname.trim().length
-            ? yourNickname
-            : getText('yourTroopsLabel', 'Ваши войска');
+        const defaults = ['player', 'игрок', defaultPlayerLocalized];
+        yourDisplay.textContent = (!gameState.multiplayer.isMultiplayer && shouldFallback(yourNickname, defaults))
+            ? getText('yourTroopsLabel', 'Ваши войска')
+            : yourNickname;
     }
 
     if (enemyDisplay) {
-        enemyDisplay.textContent = enemyNickname && enemyNickname.trim().length
-            ? enemyNickname
-            : getText('enemyLabel', 'Враг');
+        const defaults = ['enemy', 'враг', defaultEnemyLocalized];
+        enemyDisplay.textContent = (!gameState.multiplayer.isMultiplayer && shouldFallback(enemyNickname, defaults))
+            ? getText('enemyLabel', 'Враг')
+            : enemyNickname;
     }
 }
 
