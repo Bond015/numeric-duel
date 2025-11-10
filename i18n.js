@@ -10,7 +10,7 @@ const i18n = {
             // Menu screen
             gameTitle: 'Числовая дуэль',
             gameName: 'Числовая дуэль',
-            gameSubtitle: 'До последнего солдата!',
+            gameSubtitle: '',
             nicknamePlaceholder: 'Введите ваш никнейм',
             startGameBtn: 'Начать игру (vs AI)',
             multiplayerBtn: 'Мультиплеер',
@@ -141,7 +141,7 @@ const i18n = {
             // Menu screen
             gameTitle: 'Numeric Duel',
             gameName: 'Numeric Duel',
-            gameSubtitle: 'To the last soldier!',
+            gameSubtitle: '',
             nicknamePlaceholder: 'Enter your nickname',
             startGameBtn: 'Start Game (vs AI)',
             multiplayerBtn: 'Multiplayer',

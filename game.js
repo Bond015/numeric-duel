@@ -2123,29 +2123,16 @@ function displayUsernames(yourNickname, enemyNickname) {
     const yourDisplay = document.getElementById('your-nickname-display');
     const enemyDisplay = document.getElementById('enemy-nickname-display');
 
-    const defaultYourLabels = ['your troops', 'ваши войска'];
-    const defaultEnemyLabels = ['enemy', 'враг'];
-
-    const normalize = (value) => (value || '').trim().toLowerCase();
-
     if (yourDisplay) {
-        const useDefault =
-            !yourNickname ||
-            (!gameState.multiplayer.isMultiplayer &&
-                defaultYourLabels.includes(normalize(yourNickname)));
-        yourDisplay.textContent = useDefault
-            ? getText('yourTroopsLabel', 'Ваши войска')
-            : yourNickname;
+        yourDisplay.textContent = yourNickname && yourNickname.trim().length
+            ? yourNickname
+            : getText('yourTroopsLabel', 'Ваши войска');
     }
 
     if (enemyDisplay) {
-        const useDefault =
-            !enemyNickname ||
-            (!gameState.multiplayer.isMultiplayer &&
-                defaultEnemyLabels.includes(normalize(enemyNickname)));
-        enemyDisplay.textContent = useDefault
-            ? getText('enemyLabel', 'Враг')
-            : enemyNickname;
+        enemyDisplay.textContent = enemyNickname && enemyNickname.trim().length
+            ? enemyNickname
+            : getText('enemyLabel', 'Враг');
     }
 }
 
