@@ -39,12 +39,8 @@ const adState = {
     lastFullscreenTime: 0,
     fullscreenCooldownMs: 0,
     showingFullscreen: false,
-    bannerVisible: false,
-    rewardClaimedForMatch: false,
-    rewardInProgress: false
+    bannerVisible: false
 };
-
-const MATCH_END_REWARD = 50;
 
 const INTERACTIVE_SELECTOR = 'input, textarea, [contenteditable="true"], .allow-selection';
 
@@ -317,82 +313,6 @@ function showFullscreenAd(trigger = 'match-end') {
     }
 }
 
-function showRewardedVideoAd() {
-    if (!yaGamesSDK || !yaGamesSDK.adv || typeof yaGamesSDK.adv.showRewardedVideo !== 'function') {
-        showInfoDialog(getText('rewardUnavailable', 'Реклама сейчас недоступна. Попробуйте позже.'));
-        return;
-    }
-    if (adState.rewardInProgress || adState.rewardClaimedForMatch) return;
-
-    adState.rewardInProgress = true;
-    updateRewardButtonState();
-
-    try {
-        yaGamesSDK.adv.showRewardedVideo({
-            callbacks: {
-                onOpen: () => console.log('[Ads] Rewarded video opened'),
-                onRewarded: () => {
-                    if (!adState.rewardClaimedForMatch) {
-                        adState.rewardClaimedForMatch = true;
-                        grantRewardTokens(MATCH_END_REWARD);
-                    }
-                },
-                onClose: () => {
-                    adState.rewardInProgress = false;
-                    updateRewardButtonState();
-                },
-                onError: (error) => {
-                    adState.rewardInProgress = false;
-                    console.warn('[Ads] Rewarded video error:', error);
-                    showErrorDialog(getText('rewardError', 'Не удалось показать рекламу. Попробуйте позже.'));
-                    updateRewardButtonState();
-                }
-            }
-        });
-    } catch (error) {
-        adState.rewardInProgress = false;
-        console.warn('[Ads] Failed to request rewarded video:', error);
-        showErrorDialog(getText('rewardError', 'Не удалось показать рекламу. Попробуйте позже.'));
-        updateRewardButtonState();
-    }
-}
-
-function grantRewardTokens(amount) {
-    if (!amount || amount <= 0) return;
-    gameState.rewardTokens = (gameState.rewardTokens || 0) + amount;
-    localStorage.setItem('gameRewardTokens', gameState.rewardTokens);
-    updateRewardUI();
-    const template = getText('rewardReceived', `Вы получили бонус: +${amount}!`);
-    const message = template.replace('{amount}', amount);
-    showInfoDialog(message, getDefaultDialogTitle('info'));
-}
-
-function updateRewardUI() {
-    const counter = document.getElementById('reward-counter');
-    if (counter) {
-        const template = getText('rewardBalance', 'Бонусы: {amount}');
-        counter.textContent = template.replace('{amount}', gameState.rewardTokens || 0);
-        const canShow = yaGamesSDK && yaGamesSDK.adv && typeof yaGamesSDK.adv.showRewardedVideo === 'function';
-        counter.style.display = canShow ? 'block' : 'none';
-    }
-    updateRewardButtonState();
-}
-
-function updateRewardButtonState() {
-    const rewardBtn = document.getElementById('rewarded-ad-btn');
-    if (!rewardBtn) return;
-
-    const canShow = yaGamesSDK && yaGamesSDK.adv && typeof yaGamesSDK.adv.showRewardedVideo === 'function';
-    if (!canShow) {
-        rewardBtn.style.display = 'none';
-        return;
-    }
-
-    rewardBtn.style.display = 'inline-flex';
-    rewardBtn.disabled = adState.rewardInProgress || adState.rewardClaimedForMatch;
-    const labelKey = adState.rewardClaimedForMatch ? 'rewardAlreadyTaken' : 'rewardedAdBtn';
-    rewardBtn.textContent = getText(labelKey, adState.rewardClaimedForMatch ? 'Награда получена' : 'Получить награду');
-}
 
 function tryReportGameReady() {
     if (gameReadyReported) return;
@@ -473,7 +393,6 @@ async function initYandexSDK() {
         console.log('✅ Yandex SDK initialized');
         autoDetectLanguage(ysdk);
         initializeAds(ysdk);
-        updateRewardUI();
         sdkReady = true;
         tryReportGameReady();
         startApplication();
@@ -502,8 +421,7 @@ let gameState = {
     stats: {
         wins: parseInt(localStorage.getItem('gameWins') || '0'),
         losses: parseInt(localStorage.getItem('gameLosses') || '0')
-    },
-    rewardTokens: parseInt(localStorage.getItem('gameRewardTokens') || '0', 10) || 0
+    }
 };
 
 // Генерация уникального ID игрока
@@ -524,7 +442,6 @@ function initGame() {
         }
         i18n.updateAllTexts();
     }
-    updateRewardUI();
 
     // Initialize global chat connection
     initGlobalChat();
@@ -562,7 +479,6 @@ function saveStats() {
     localStorage.setItem('gameWins', gameState.stats.wins);
     localStorage.setItem('gameLosses', gameState.stats.losses);
     localStorage.setItem('gamePlayerId', gameState.playerId);
-    localStorage.setItem('gameRewardTokens', gameState.rewardTokens || 0);
 
     // Сохраняем никнейм
     const nicknameInput = document.getElementById('nickname-input');
@@ -586,10 +502,6 @@ function setupEventListeners() {
     document.getElementById('surrender-btn').addEventListener('click', surrender);
     document.getElementById('play-again-btn').addEventListener('click', resetGame);
     document.getElementById('menu-btn').addEventListener('click', backToMenu);
-    const rewardBtn = document.getElementById('rewarded-ad-btn');
-    if (rewardBtn) {
-        rewardBtn.addEventListener('click', showRewardedVideoAd);
-    }
 
     // Модальное окно правил
     const modal = document.getElementById('rules-modal');
@@ -609,7 +521,6 @@ function setupEventListeners() {
                 // Update active button
                 langButtons.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                updateRewardUI();
             }
         });
     });
@@ -1458,10 +1369,6 @@ function showResult(icon, title, message, type) {
 }
 
 function handleMatchEndAds() {
-    adState.rewardClaimedForMatch = false;
-    adState.rewardInProgress = false;
-    updateRewardUI();
-
     const triggerAd = () => showFullscreenAd('match-end');
     if (typeof requestIdleCallback === 'function') {
         requestIdleCallback(triggerAd);
