@@ -722,7 +722,7 @@ function displayFlankSetup() {
 
     // Update nicknames for single player
     if (!gameState.multiplayer.isMultiplayer) {
-        displayUsernames(gameState.nickname || 'Your Troops', 'Enemy');
+        displayUsernames(gameState.nickname, null);
     }
 }
 
@@ -1419,7 +1419,7 @@ function setupSocketListeners() {
             displayUsernames(data.yourNickname, data.enemyNickname);
         } else {
             // Use defaults if not provided
-            displayUsernames(gameState.nickname || 'Your Troops', 'Enemy');
+        displayUsernames(gameState.nickname, null);
         }
 
         // Сбрасываем флаг placed для всех отрядов и фланги
@@ -2018,12 +2018,29 @@ function displayUsernames(yourNickname, enemyNickname) {
     const yourDisplay = document.getElementById('your-nickname-display');
     const enemyDisplay = document.getElementById('enemy-nickname-display');
 
+    const defaultYourLabels = ['your troops', 'ваши войска'];
+    const defaultEnemyLabels = ['enemy', 'враг'];
+
+    const normalize = (value) => (value || '').trim().toLowerCase();
+
     if (yourDisplay) {
-        yourDisplay.textContent = yourNickname || getText('yourTroopsLabel', 'Ваши войска');
+        const useDefault =
+            !yourNickname ||
+            (!gameState.multiplayer.isMultiplayer &&
+                defaultYourLabels.includes(normalize(yourNickname)));
+        yourDisplay.textContent = useDefault
+            ? getText('yourTroopsLabel', 'Ваши войска')
+            : yourNickname;
     }
 
     if (enemyDisplay) {
-        enemyDisplay.textContent = enemyNickname || getText('enemyLabel', 'Враг');
+        const useDefault =
+            !enemyNickname ||
+            (!gameState.multiplayer.isMultiplayer &&
+                defaultEnemyLabels.includes(normalize(enemyNickname)));
+        enemyDisplay.textContent = useDefault
+            ? getText('enemyLabel', 'Враг')
+            : enemyNickname;
     }
 }
 

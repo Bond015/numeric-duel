@@ -366,9 +366,12 @@ const i18n = {
             // if (enemyTroops) enemyTroops.textContent = this.t('enemyTroops');
 
             const flankLabels = flankScreen.querySelectorAll('.flank-label');
+            const flankTexts = [this.t('left'), this.t('center'), this.t('right')];
             flankLabels.forEach((label, idx) => {
-                const labels = [this.t('left'), this.t('center'), this.t('right')];
-                if (labels[idx]) label.textContent = labels[idx];
+                const labelIndex = idx % flankTexts.length;
+                if (flankTexts[labelIndex]) {
+                    label.textContent = flankTexts[labelIndex];
+                }
             });
 
             const flankReadyBtn = document.getElementById('flank-ready-btn');
